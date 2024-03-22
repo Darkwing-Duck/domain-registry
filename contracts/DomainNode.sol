@@ -33,7 +33,7 @@ contract DomainNode is Ownable {
     /// @notice Indicates that the domain name is already registered and unavailable
     error DomainIsAlreadyRegistered();
 
-    /// @notice Indicates that the domain name is already registered and unavailable
+    /// @notice Indicates that the domain name was not registered
     error DomainWasNotRegistered();
 
     /// @notice Indicates that withdraw was failed
