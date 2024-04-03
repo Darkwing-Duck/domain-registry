@@ -1,24 +1,33 @@
 import {loadFixture,} from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import {ethers} from "hardhat";
 import {expect} from "chai";
+import {DomainRegistry} from "../typechain-types";
+import {TypedContractEvent, TypedEventLog} from "../typechain-types/common";
+import {DomainRegisteredEvent} from "../typechain-types/DomainRegistry";
 
 describe("DomainRegistry", function () {
     async function domainRegistryFixture() {
 
         // Contracts are deployed using the first signer/account by default
         const [owner, otherAccount] = await ethers.getSigners();
-        
-        const DomainRegistryProto = await ethers.getContractFactory("DomainRegistry");
+        const FactoryProto = await ethers.getContractFactory("DomainRegistryFactory");
         
         const registrationPrice = ethers.parseEther("1");
         const salt = ethers.encodeBytes32String("test_salt");
-        const domainRegistry = await DomainRegistryProto.deploy(registrationPrice, salt);
+        const factory = await FactoryProto.deploy(salt);
+        const predictedAddress = await factory.predictAddress(owner, registrationPrice);
+
+        // create DomainRegistry
+        await factory.create(owner, registrationPrice);
+        
+        // get just deployed DomainRegistry contract instance
+        const domainRegistry = await hre.ethers.getContractAt("DomainRegistry", predictedAddress);
 
         return { domainRegistry, owner, otherAccount };
     }
     
     function getReadableDate(timestamp: BigInt) {
-        return new Date(Number(timestamp)).toLocaleDateString();
+        return new Date(Number(timestamp) * 1000).toLocaleDateString();
     }
 
     it("Should support only top-level domain names", async () => {
@@ -58,6 +67,10 @@ describe("DomainRegistry", function () {
 
         // the domain com is unavailable to register
         expect(await domainRegistry.isDomainRegistered(domainName)).to.be.true;
+
+        await expect(domainRegistry.registerDomain(domainName, options)).to.be.rejectedWith(
+            'DomainIsAlreadyRegistered'
+        );
     });
 
     it("Should increase balance due to domain registering", async () => {
@@ -135,42 +148,49 @@ describe("DomainRegistry", function () {
             await domainRegistry.registerDomain(domainName, options);
         }
 
-        const filter = domainRegistry.filters.DomainCreated();
+        const filter = domainRegistry.filters.DomainRegistered();
         const logs = await domainRegistry.queryFilter(filter);
-        
+        let sortedLogs = sortLogsByDate(logs);
+
         // print registered domains number
-        console.log(`Number of registered domains: ${logs.length}`);
+        console.log(`Number of registered domains: ${sortedLogs.length}`);
 
         console.log("\n");
 
         // print detailed info of all registered domains
         console.log(`===== All registered domains ======`);
         logs.map((log) => {
-            logDomainInfo(log.args.name, log.args.createdDate, log.args.domainHolder, log.args.domainNode);
+            logDomainInfo(log.args.name, log.args.createdDate, log.args.domainHolder);
         });
         console.log(`===================================`);
 
         console.log("\n");
-        
-        // print detailed info of all registered sub-domains for domain 'org'
-        console.log(`===== All registered domains for domain 'org' ======`);
-        const domainNodeAddress = await domainRegistry.getDomainNode("org");
-        const orgFilter = domainRegistry.filters.DomainCreated(null, domainNodeAddress);
-        const orgLogs = await domainRegistry.queryFilter(orgFilter);
 
-        orgLogs.map((log) => {
-            logDomainInfo(log.args.name, log.args.createdDate, log.args.domainHolder, log.args.domainNode);
+        // print detailed info of all registered sub-domains for domain 'org'
+        const domainEntry = await domainRegistry.findDomainEntryBy("org");
+        const domainHolderAddress = domainEntry.holder;
+
+        console.log(`===== All registered domains by a domain holder (%s) ======`, domainHolderAddress);
+        const orgFilter = domainRegistry.filters.DomainRegistered(null, domainHolderAddress);
+        const orgLogs = await domainRegistry.queryFilter(orgFilter);
+        sortedLogs = sortLogsByDate(orgLogs);
+
+        sortedLogs.map((log) => {
+            logDomainInfo(log.args.name, log.args.createdDate, log.args.domainHolder);
         });
         console.log(`====================================================`);
-        
+
         expect(logs.length).to.be.equal(3);
     });
-    
-    function logDomainInfo(name: string, createdDate: BigInt, domainHolder: string, nodeAddress: string) {
+
+    function sortLogsByDate(logs: TypedEventLog<TypedContractEvent<DomainRegisteredEvent.InputTuple, DomainRegisteredEvent.OutputTuple, DomainRegisteredEvent.OutputObject>>[]) {
+        return logs.sort((a, b) => Number(b.args.createdDate - a.args.createdDate));
+    }
+
+    function logDomainInfo(name: string, createdDate: BigInt, domainHolder: string) {
         // make logs with a proper indentation
         console.log(`[${name}]:
     - createdDate: ${getReadableDate(createdDate)}
-    - domainHolder: ${domainHolder}
-    - domainNode: ${nodeAddress}`);
+    - domainHolder: ${domainHolder}`);
     }
 });
