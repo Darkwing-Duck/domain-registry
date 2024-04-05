@@ -86,6 +86,8 @@ contract DomainRegistry is Ownable {
         return domainsMap[domainName] != address(0x0);
     }
 
+    /// @notice Registers passed domain name and sends the event to outside world
+    /// @param domainName - The name of domain to be registered
     function registerDomain(string memory domainName)
         payable
         external
