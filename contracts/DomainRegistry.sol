@@ -4,23 +4,16 @@ pragma solidity ^0.8.0;
 import "solidity-stringutils/src/strings.sol";
 import {Ownable} from "./Ownable.sol";
 
+/// @author Serhii Smirnov
+/// @title Describes a registry of all registered domain names linked to a domain holder, who have registered the domain name
 contract DomainRegistry is Ownable {
     using strings for *;
-
-    /// @notice Describes registered domain entry with all the related data
-    /// @param name - The name of the registered domain
-    /// @param holder - The holder of the registered domain
-    /// @param isRegistered - Indicates whether the domain registered or not
-    struct DomainEntry {
-        string name;
-        address payable holder;
-        bool isRegistered;
-    }
 
     /// @notice Price for registration sub-domains 
     uint public registrationPrice;
 
-    mapping(string => DomainEntry) public domainsMap;
+    /// @notice Mapping of top-level domain name to domain holder address
+    mapping(string => address payable) public domainsMap;
 
     
     /// @notice Event that is notifying external world about new domain registration action
@@ -90,7 +83,7 @@ contract DomainRegistry is Ownable {
         view
         returns (bool)
     {
-        return domainsMap[domainName].isRegistered;
+        return domainsMap[domainName] != address(0x0);
     }
 
     function registerDomain(string memory domainName)
@@ -111,29 +104,25 @@ contract DomainRegistry is Ownable {
         }
 
         // register new domain name
-        domainsMap[domainName] = DomainEntry({
-            name: domainName,
-            holder: payable(msg.sender),
-            isRegistered: true
-        });
+        domainsMap[domainName] = payable(msg.sender);
 
         // send event
         emit DomainRegistered({
             indexedName: domainName,
-            indexedDomainHolder: address(msg.sender),
+            indexedDomainHolder: msg.sender,
             name: domainName,
-            domainHolder: address(msg.sender),
+            domainHolder: msg.sender,
             createdDate: block.timestamp
         });
     }
 
     /// @notice Resolves domain entry by the name
     /// @param domainName - The name of domain to be resolved
-    function findDomainEntryBy(string memory domainName)
+    function findDomainHolderBy(string memory domainName)
         external
         view
         onlyRegisteredDomain(domainName)
-        returns (DomainEntry memory)
+        returns (address)
     {
         return domainsMap[domainName];
     }
