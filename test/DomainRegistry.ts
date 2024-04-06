@@ -1,5 +1,5 @@
 import {loadFixture,} from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import {ethers} from "hardhat";
+import {ethers, upgrades} from "hardhat";
 import {expect} from "chai";
 import {TypedContractEvent, TypedEventLog} from "../typechain-types/common";
 import {DomainRegisteredEvent} from "../typechain-types/DomainRegistry";
@@ -12,7 +12,7 @@ describe("DomainRegistry", function () {
         const DomainRegistryProto = await ethers.getContractFactory("DomainRegistry");
         
         const registrationPrice = ethers.parseEther("1");
-        const domainRegistry = await DomainRegistryProto.deploy(owner, registrationPrice);
+        const domainRegistry = await upgrades.deployProxy(DomainRegistryProto, [owner.address, registrationPrice]);
 
         return { domainRegistry, owner, otherAccount };
     }
