@@ -7,7 +7,7 @@ import "hardhat/console.sol";
 
 /// @author Serhii Smirnov
 /// @title Describes a registry of all registered domain names linked to a domain holder, who have registered the domain name
-contract DomainRegistry_V2 is OwnableUpgradeable {
+contract DomainRegistryV2 is OwnableUpgradeable {
     using strings for *;
 
     /// @custom:storage-location erc7201:mycompanyname.storage.DomainRegistry
@@ -15,11 +15,11 @@ contract DomainRegistry_V2 is OwnableUpgradeable {
         /// @notice Price for registration sub-domains 
         uint registrationPrice;
 
-        /// @notice Parent domain holder's reward for sub domain registration
-        uint holderRegistrationReward;
-
         /// @notice Mapping of domain name to domain holder address
         mapping(string => address payable) domainsMap;
+
+        /// @notice Parent domain holder's reward for sub domain registration
+        uint holderRegistrationReward;
 
         /// @notice Balances of each registered domain
         mapping(string => uint256) domainBalances;

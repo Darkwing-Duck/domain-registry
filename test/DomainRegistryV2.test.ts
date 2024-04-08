@@ -182,7 +182,7 @@ describe("DomainRegistry", function () {
         expect(await domainRegistry.registrationPrice()).to.be.equal(newPrice);
     });
 
-    it("Only owner can change registration price", async () => {
+    it("Only owner can change domain's holder reward value", async () => {
         const { domainRegistry, otherAccount } = await loadFixture(domainRegistryFixture);
         const newPrice = ethers.parseEther("0.2");
         const initialPrice = await domainRegistry.domainHolderReward();
