@@ -191,6 +191,9 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @notice Withdraws all the balance to the owner's address 
     function withdraw() external onlyOwner {
         uint256 availableBalanceToWithdraw = address(this).balance - _getRegistryStorage().totalRewardsBalance;
+
+        if (availableBalanceToWithdraw == 0)
+            revert NothingToWithdraw();
         
         if (!payTo(payable(owner()), availableBalanceToWithdraw))
             revert WithdrawFailed();
@@ -208,6 +211,9 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         
         if (rewardBalance == 0)
             revert NothingToWithdraw();
+
+        $.domainBalances[domainName] = 0;
+        $.totalRewardsBalance -= rewardBalance;
         
         if (!payTo(domainHolder, rewardBalance))
             revert WithdrawRewardFailed(domainName);

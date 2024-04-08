@@ -159,22 +159,32 @@ describe("DomainRegistry", function () {
         await expect(withdrawTx).to.changeEtherBalance(owner, withdrawValue);
     });
 
-    it("Only owner can withdraw reward balance to domain holders", async () => {
+    it("Should withdraw reward balance for a domain holder, only by owner", async () => {
         const { domainRegistry, owner, otherAccount } = await loadFixture(domainRegistryFixture);
         const etherToSend = ethers.parseEther("1");
         const options = { value: etherToSend };
+        const topDomain = "com";
+        const subDomain = "business.com";
+        const rewardAmount = await domainRegistry.domainHolderReward();
 
-        await domainRegistry.registerDomain("com", options);
-        await domainRegistry.registerDomain("net", options);
+        await domainRegistry.registerDomain(topDomain, options);
+        await domainRegistry.registerDomain(subDomain, options);
 
-        await expect(domainRegistry.connect(otherAccount).withdraw()).to.be.rejectedWith(
+        expect(await domainRegistry.getDomainHolderBalance(topDomain)).to.be.equal(rewardAmount);
+
+        await expect(domainRegistry.connect(otherAccount).withdrawRewardFor(topDomain)).to.be.rejectedWith(
             'OwnableUnauthorizedAccount'
         );
 
-        const withdrawTx = await domainRegistry.withdraw();
+        const getTotalRewardBalance = await domainRegistry.getTotalRewardBalance();
+        const topDomainHolderAddress = await domainRegistry.findDomainHolderBy(topDomain);
+        const targetContractBalance = ethers.parseEther("2") - rewardAmount;
+        const withdrawTx = await domainRegistry.withdrawRewardFor(topDomain);
 
-        expect(await ethers.provider.getBalance(domainRegistry)).to.be.equal(0);
-        await expect(withdrawTx).to.changeEtherBalance(owner, ethers.parseEther("2"));
+        expect(await ethers.provider.getBalance(domainRegistry)).to.be.equal(targetContractBalance);
+        expect(await domainRegistry.getTotalRewardBalance()).to.be.equal(getTotalRewardBalance - rewardAmount);
+        expect(await domainRegistry.getDomainHolderBalance(topDomain)).to.be.equal(0);
+        await expect(withdrawTx).to.changeEtherBalance(topDomainHolderAddress, rewardAmount);
     });
 
     // @notice If sender will pay more then needed, contract should refund the excess 
