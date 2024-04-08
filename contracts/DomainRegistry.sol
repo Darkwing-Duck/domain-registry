@@ -54,9 +54,6 @@ contract DomainRegistry is OwnableUpgradeable {
 
     /// @notice Indicates that amount of money passed is not enough to register the domain name
     error PaymentForRegisteringDomainFailed(string message);
-
-    /// @notice Indicates that the passed domain name is unsupported with an error message
-    error UnsupportedDomainName(string message);
     
 
     /// @dev Used instead of constructor due to use upgradeable contract approach
@@ -82,15 +79,6 @@ contract DomainRegistry is OwnableUpgradeable {
         _;
     }
 
-    // @notice Guarantees that only supported domain names can be passed to a method with the modifier
-    modifier onlySupportedDomain(string memory domain) {
-        bool containsDot = domain.toSlice().contains(".".toSlice());
-
-        if (containsDot)
-            revert UnsupportedDomainName("Currently only top level domain names are supported ('com', 'net', ...).");
-        _;
-    }
-
     /// @notice Checks if domain has been already registered
     /// @param domainName - The name of domain to check
     function isDomainRegistered(string memory domainName)
@@ -107,7 +95,6 @@ contract DomainRegistry is OwnableUpgradeable {
         payable
         external
         availableDomain(domainName)
-        onlySupportedDomain(domainName)
     {
         RegistryStorage storage $ = _getRegistryStorage();
         

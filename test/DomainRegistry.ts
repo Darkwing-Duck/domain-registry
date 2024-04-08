@@ -31,20 +31,6 @@ describe("DomainRegistry", function () {
     - createdDate: ${getReadableDate(createdDate)}
     - domainHolder: ${domainHolder}`);
     }
-
-    it("Should support only top-level domain names", async () => {
-        const { domainRegistry } = await loadFixture(domainRegistryFixture);
-
-        // should be rejected due an unsupported domain name
-        await expect(domainRegistry.registerDomain("business.com")).to.be.rejectedWith(
-            "UnsupportedDomainName"
-        );
-
-        // should not be rejected for supported domain name
-        await expect(domainRegistry.registerDomain("com")).to.not.be.rejectedWith(
-            "UnsupportedDomainName"
-        );
-    });
     
     it("Should revert with 'NotEnoughMoneyToRegisterDomain' error", async () => {
         const domainName = "com";
