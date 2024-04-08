@@ -10,10 +10,11 @@ describe("DomainRegistry", function () {
         // Contracts are deployed using the first signer/account by default
         const [owner, otherAccount] = await ethers.getSigners();
         const DomainRegistryProto = await ethers.getContractFactory("DomainRegistryV2");
-        
-        const registrationPrice = ethers.parseEther("1");
+
         const domainHolderReward = ethers.parseEther("0.1");
-        const domainRegistry = await upgrades.deployProxy(DomainRegistryProto, [owner.address, registrationPrice, domainHolderReward]);
+        const registrationPrice = ethers.parseEther("1");
+        const domainRegistry = await upgrades.deployProxy(DomainRegistryProto, [owner.address, registrationPrice]);
+        domainRegistry.changeDomainHolderReward(domainHolderReward);
 
         return { domainRegistry, owner, otherAccount };
     }
@@ -130,6 +131,24 @@ describe("DomainRegistry", function () {
 
         balance = await ethers.provider.getBalance(domainRegistry);
         expect(balance).to.be.equal(etherToSend);
+    });
+
+    it("Only owner can withdraw balance to its own address", async () => {
+        const { domainRegistry, owner, otherAccount } = await loadFixture(domainRegistryFixture);
+        const etherToSend = ethers.parseEther("1");
+        const options = { value: etherToSend };
+
+        await domainRegistry.registerDomain("com", options);
+        await domainRegistry.registerDomain("net", options);
+
+        await expect(domainRegistry.connect(otherAccount).withdraw()).to.be.rejectedWith(
+            'OwnableUnauthorizedAccount'
+        );
+
+        const withdrawTx = await domainRegistry.withdraw();
+
+        expect(await ethers.provider.getBalance(domainRegistry)).to.be.equal(0);
+        expect(withdrawTx).to.changeEtherBalance(owner, ethers.parseEther("2"));
     });
 
     // @notice If sender will pay more then needed, contract should refund the excess 

@@ -2,9 +2,9 @@
   "name": "hardhat-project",
   "scripts": {
     "hardhat:node": "hardhat node",
-    "hardhat:test:v1": "hardhat test ./test/DomainRegistry.ts",
-    "hardhat:test:v2": "hardhat test ./test/DomainRegistryV2.ts",
-    "hardhat:test:upgrade": "hardhat test ./test/DomainRegistryUpgrade.ts",
+    "hardhat:test:v1": "hardhat test ./test/DomainRegistry.test.ts",
+    "hardhat:test:v2": "hardhat test ./test/DomainRegistryV2.test.ts",
+    "hardhat:test:upgrade": "hardhat test ./test/DomainRegistryUpgrade.test.ts",
     "hardhat:compile": "hardhat compile"
   },
   "devDependencies": {
