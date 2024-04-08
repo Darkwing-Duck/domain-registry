@@ -15,6 +15,8 @@ describe("DomainRegistry", function () {
         const registrationPrice = ethers.parseEther("1");
         const domainRegistry = await upgrades.deployProxy(DomainRegistryProto, [owner.address, registrationPrice]);
         domainRegistry.changeDomainHolderReward(domainHolderReward);
+        
+        console.log(await domainRegistry.getAddress());
 
         return { domainRegistry, owner, otherAccount };
     }
@@ -137,6 +139,30 @@ describe("DomainRegistry", function () {
         const { domainRegistry, owner, otherAccount } = await loadFixture(domainRegistryFixture);
         const etherToSend = ethers.parseEther("1");
         const options = { value: etherToSend };
+        const targetContractBalance = ethers.parseEther("3");
+
+        await domainRegistry.registerDomain("net", options);
+        await domainRegistry.registerDomain("com", options);
+        await domainRegistry.registerDomain("business.com", options);
+
+        await expect(domainRegistry.connect(otherAccount).withdraw()).to.be.rejectedWith(
+            'OwnableUnauthorizedAccount'
+        );
+
+        expect(await ethers.provider.getBalance(domainRegistry)).to.be.equal(targetContractBalance);
+
+        const withdrawTx = await domainRegistry.withdraw();
+        const totalRewardBalance = await domainRegistry.getTotalRewardBalance();
+        const withdrawValue = targetContractBalance - totalRewardBalance;
+
+        expect(await ethers.provider.getBalance(domainRegistry)).to.be.equal(totalRewardBalance);
+        await expect(withdrawTx).to.changeEtherBalance(owner, withdrawValue);
+    });
+
+    it("Only owner can withdraw reward balance to domain holders", async () => {
+        const { domainRegistry, owner, otherAccount } = await loadFixture(domainRegistryFixture);
+        const etherToSend = ethers.parseEther("1");
+        const options = { value: etherToSend };
 
         await domainRegistry.registerDomain("com", options);
         await domainRegistry.registerDomain("net", options);
@@ -148,7 +174,7 @@ describe("DomainRegistry", function () {
         const withdrawTx = await domainRegistry.withdraw();
 
         expect(await ethers.provider.getBalance(domainRegistry)).to.be.equal(0);
-        expect(withdrawTx).to.changeEtherBalance(owner, ethers.parseEther("2"));
+        await expect(withdrawTx).to.changeEtherBalance(owner, ethers.parseEther("2"));
     });
 
     // @notice If sender will pay more then needed, contract should refund the excess 

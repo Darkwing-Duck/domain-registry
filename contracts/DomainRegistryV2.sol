@@ -21,6 +21,10 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         /// @notice Parent domain holder's reward for sub domain registration
         uint holderRegistrationReward;
 
+        /// @notice Describes the total rewards balance that all domain holders have together
+        /// @dev using to calculate how much the owner can withdraw
+        uint totalRewardsBalance;
+
         /// @notice Balances of each registered domain
         mapping(string => uint256) domainBalances;
     }
@@ -63,6 +67,12 @@ contract DomainRegistryV2 is OwnableUpgradeable {
 
     /// @notice Indicates that while registering sub-domain name the parent domain name doesn't exist.
     error ParentDomainNameWasNotFound(string parentDomainName);
+
+    /// @notice Indicates that withdraw reward was failed
+    error WithdrawRewardFailed(string domainName);
+
+    /// @notice Indicates that nothing to withdraw
+    error NothingToWithdraw();
 
 
     /// @dev Used instead of constructor due to use upgradeable contract approach
@@ -139,6 +149,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
 
             // add reward for parent domain
             $.domainBalances[parentDomainName] += $.holderRegistrationReward;
+            $.totalRewardsBalance += $.holderRegistrationReward;
 
             parentDomainName = string.concat(".", parentDomainName);
         }
@@ -179,8 +190,27 @@ contract DomainRegistryV2 is OwnableUpgradeable {
 
     /// @notice Withdraws all the balance to the owner's address 
     function withdraw() external onlyOwner {
-        if (!payTo(payable(owner()), address(this).balance))
+        uint256 availableBalanceToWithdraw = address(this).balance - _getRegistryStorage().totalRewardsBalance;
+        
+        if (!payTo(payable(owner()), availableBalanceToWithdraw))
             revert WithdrawFailed();
+    }
+
+    /// @notice Withdraws reward for specified domain name
+    function withdrawRewardFor(string memory domainName) 
+        external 
+        onlyOwner
+        onlyRegisteredDomain(domainName)
+    {
+        RegistryStorage storage $ = _getRegistryStorage();
+        address payable domainHolder = $.domainsMap[domainName]; 
+        uint256 rewardBalance = $.domainBalances[domainName];
+        
+        if (rewardBalance == 0)
+            revert NothingToWithdraw();
+        
+        if (!payTo(domainHolder, rewardBalance))
+            revert WithdrawRewardFailed(domainName);
     }
 
     /// @notice Returns actual price for a domain registration
@@ -193,9 +223,14 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         return _getRegistryStorage().holderRegistrationReward;
     }
 
-    /// @notice Returns total reward balance of domain's holder
+    /// @notice Returns reward balance of domain's holder
     function getDomainHolderBalance(string memory domainName) external view returns (uint256) {
         return _getRegistryStorage().domainBalances[domainName];
+    }
+
+    /// @notice Returns total reward balance of all domain names
+    function getTotalRewardBalance() external view returns (uint256) {
+        return _getRegistryStorage().totalRewardsBalance;
     }
 
     /// @notice Sends 'amount' of ether to 'recipient' 
