@@ -76,6 +76,24 @@ describe("DomainRegistry", function () {
         expect(balance).to.be.equal(etherToSend);
     });
 
+    it("Only owner can withdraw balance to its own address", async () => {
+        const { domainRegistry, owner, otherAccount } = await loadFixture(domainRegistryFixture);
+        const etherToSend = ethers.parseEther("1");
+        const options = { value: etherToSend };
+
+        await domainRegistry.registerDomain("com", options);
+        await domainRegistry.registerDomain("net", options);
+
+        await expect(domainRegistry.connect(otherAccount).withdraw()).to.be.rejectedWith(
+            'OwnableUnauthorizedAccount'
+        );
+        
+        const withdrawTx = await domainRegistry.withdraw();
+        
+        expect(await ethers.provider.getBalance(domainRegistry)).to.be.equal(0);
+        expect(withdrawTx).to.changeEtherBalance(owner, ethers.parseEther("2"));
+    });
+
     // @notice If sender will pay more then needed, contract should refund the excess 
     it("Should refund excess due to overpayment", async () => {
         const domainName = "com";
@@ -114,13 +132,13 @@ describe("DomainRegistry", function () {
         const initialPrice = await domainRegistry.registrationPrice();
 
         await expect(domainRegistry.connect(otherAccount).changeRegistrationPrice(newPrice)).to.be.rejectedWith(
-            'UnauthorizedAccount'
+            'OwnableUnauthorizedAccount'
         );
 
         expect(await domainRegistry.registrationPrice()).to.be.equal(initialPrice);
 
         await expect(domainRegistry.changeRegistrationPrice(newPrice)).to.not.be.rejectedWith(
-            'UnauthorizedAccount'
+            'OwnableUnauthorizedAccount'
         );
 
         expect(await domainRegistry.registrationPrice()).to.be.equal(newPrice);
