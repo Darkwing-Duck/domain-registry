@@ -4,13 +4,13 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "solidity-stringutils/src/strings.sol";
 import "hardhat/console.sol";
-import "../libraries/RewardSystem.sol";
+import {RewardRegistry} from "../libraries/RewardRegistry.sol";
 
 /// @author Serhii Smirnov
 /// @title Describes a registry of all registered domain names linked to a domain holder, who have registered the domain name
 contract DomainRegistryV2 is OwnableUpgradeable {
     using strings for *;
-    using RewardSystem for RewardSystem.RewardInfo;
+    using RewardRegistry for RewardRegistry.Info;
 
     /// @custom:storage-location erc7201:mycompanyname.storage.DomainRegistry
     struct RegistryStorage {
@@ -21,7 +21,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         mapping(string => address payable) domainsMap;
 
         /// @notice Reward information
-        RewardSystem.RewardInfo rewardInfo;
+        RewardRegistry.Info rewardInfo;
     }
 
     // keccak256(abi.encode(uint256(keccak256("mycompanyname.storage.DomainRegistry")) - 1)) & ~bytes32(uint256(0xff))

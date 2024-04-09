@@ -3,11 +3,11 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 
-library RewardSystem {
+library RewardRegistry {
 
     /// @author Serhii Smirnov
     /// @title Describes all the information regarding domain rewards
-    struct RewardInfo {
+    struct Info {
         /// @notice Parent domain holder's reward for sub domain registration
         uint holderRegistrationReward;
 
@@ -20,7 +20,7 @@ library RewardSystem {
     }
 
     /// @notice Returns reward balance of domain's holder
-    function getDomainRewardBalance(RewardInfo storage rewardRegistry, string memory domainName) 
+    function getDomainRewardBalance(Info storage rewardRegistry, string memory domainName) 
         internal 
         view 
         returns (uint256) 
@@ -29,7 +29,7 @@ library RewardSystem {
     }
 
     /// @notice Applies reward to specified domain name
-    function applyFor(RewardInfo storage rewardRegistry, string memory domainName)
+    function applyFor(Info storage rewardRegistry, string memory domainName)
         internal
         returns (uint256)
     {
@@ -39,7 +39,7 @@ library RewardSystem {
     }
 
     /// @notice Resets reward for specified domain name
-    function resetFor(RewardInfo storage rewardRegistry, string memory domainName)
+    function resetFor(Info storage rewardRegistry, string memory domainName)
         internal
     {
         rewardRegistry.totalRewardsBalance -= rewardRegistry.domainBalances[domainName];
