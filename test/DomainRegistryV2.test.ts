@@ -105,19 +105,20 @@ describe("DomainRegistry", function () {
         await domainRegistry.registerDomain(rootDomain, options);
         
         // on start reward balance is 0
-        expect(await domainRegistry.getDomainHolderBalance(rootDomain)).to.be.equal(0);
+        expect(await domainRegistry.getDomainRewardBalance(rootDomain)).to.be.equal(0);
 
         await domainRegistry.registerDomain(subDomain1, options);
         
+        console.log(await domainRegistry.getDomainRewardBalance(rootDomain));
         // after first sub-domain registration reward balance is 'domainHolderReward' value
-        expect(await domainRegistry.getDomainHolderBalance(rootDomain)).to.be.equal(targetRewardBalance);
+        expect(await domainRegistry.getDomainRewardBalance(rootDomain)).to.be.equal(targetRewardBalance);
 
         await domainRegistry.registerDomain(subDomain2, options);
 
         targetRewardBalance += domainHolderReward;
 
         // after second sub-domain registration reward balance is 'domainHolderReward' * 2 value
-        expect(await domainRegistry.getDomainHolderBalance(rootDomain)).to.be.equal(targetRewardBalance);
+        expect(await domainRegistry.getDomainRewardBalance(rootDomain)).to.be.equal(targetRewardBalance);
     });
 
     it("Should increase balance due to domain registering", async () => {
@@ -170,7 +171,7 @@ describe("DomainRegistry", function () {
         await domainRegistry.registerDomain(topDomain, options);
         await domainRegistry.registerDomain(subDomain, options);
 
-        expect(await domainRegistry.getDomainHolderBalance(topDomain)).to.be.equal(rewardAmount);
+        expect(await domainRegistry.getDomainRewardBalance(topDomain)).to.be.equal(rewardAmount);
 
         await expect(domainRegistry.connect(otherAccount).withdrawRewardFor(topDomain)).to.be.rejectedWith(
             'OwnableUnauthorizedAccount'
@@ -183,7 +184,7 @@ describe("DomainRegistry", function () {
 
         expect(await ethers.provider.getBalance(domainRegistry)).to.be.equal(targetContractBalance);
         expect(await domainRegistry.getTotalRewardBalance()).to.be.equal(getTotalRewardBalance - rewardAmount);
-        expect(await domainRegistry.getDomainHolderBalance(topDomain)).to.be.equal(0);
+        expect(await domainRegistry.getDomainRewardBalance(topDomain)).to.be.equal(0);
         await expect(withdrawTx).to.changeEtherBalance(topDomainHolderAddress, rewardAmount);
     });
 
