@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.18;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {strings} from "solidity-stringutils/src/strings.sol";
@@ -30,10 +30,10 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     function _getRegistryStorage()
         private
         pure
-        returns (RegistryStorage storage $)
+        returns (RegistryStorage storage registryStorage)
     {
         assembly {
-            $.slot := REGISTRY_STORAGE_LOCATION
+            registryStorage.slot := REGISTRY_STORAGE_LOCATION
         }
     }
 
@@ -112,6 +112,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     }
 
     receive() external payable {}
+
     fallback() external payable {}
 
     /// @notice Guarantees that only available domains can be passed to a method with the modifier
@@ -139,27 +140,17 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     function registerDomain(
         string memory domainName
     ) external payable availableDomain(domainName) {
-        RegistryStorage storage $ = _getRegistryStorage();
+        RegistryStorage storage registryStorage = _getRegistryStorage();
 
-        if (msg.value < $.registrationPrice)
+        if (msg.value < registryStorage.registrationPrice)
             revert PaymentForRegisteringDomainFailed(
                 "Not enough ether to register the domain"
             );
 
-        // excess refunding mechanism
-        if (msg.value > $.registrationPrice) {
-            uint256 excess = msg.value - $.registrationPrice;
-
-            if (!payTo(payable(msg.sender), excess))
-                revert PaymentForRegisteringDomainFailed(
-                    "The overpayment was detected, but refunding the excess was not succeed"
-                );
-        }
-
-        tryRewardAllParentDomains(domainName, $);
+        tryRewardAllParentDomains(domainName, registryStorage);
 
         // register new domain name
-        $.domainsMap[domainName] = payable(msg.sender);
+        registryStorage.domainsMap[domainName] = payable(msg.sender);
 
         // send event
         emit DomainRegistered({
@@ -169,13 +160,23 @@ contract DomainRegistryV2 is OwnableUpgradeable {
             domainHolder: msg.sender,
             createdDate: block.timestamp
         });
+
+        // excess refunding mechanism
+        if (msg.value > registryStorage.registrationPrice) {
+            uint256 excess = msg.value - registryStorage.registrationPrice;
+
+            if (!payTo(payable(msg.sender), excess))
+                revert PaymentForRegisteringDomainFailed(
+                    "The overpayment was detected, but refunding the excess was not succeed"
+                );
+        }
     }
 
     /// @notice Applies reward to all the parent domains of the specified domain name if exist
     /// @param domainName - The name of domain to be processed
     function tryRewardAllParentDomains(
         string memory domainName,
-        RegistryStorage storage $
+        RegistryStorage storage registryStorage
     ) private {
         strings.slice memory domainNameSlice = domainName.toSlice();
         strings.slice memory delimiter = ".".toSlice();
@@ -194,9 +195,13 @@ contract DomainRegistryV2 is OwnableUpgradeable {
                 revert ParentDomainNameWasNotFound(parentDomainName);
 
             // apply reward for parent domain
-            uint appliedReward = $.rewardInfo.applyFor(parentDomainName);
+            uint appliedReward = registryStorage.rewardInfo.applyFor(
+                parentDomainName
+            );
 
-            address domainHolderAddress = $.domainsMap[parentDomainName];
+            address domainHolderAddress = registryStorage.domainsMap[
+                parentDomainName
+            ];
 
             // fire event
             emit RewardApplied({
@@ -205,9 +210,9 @@ contract DomainRegistryV2 is OwnableUpgradeable {
                 domainName: parentDomainName,
                 domainHolder: domainHolderAddress,
                 rewardValue: appliedReward,
-                rewardBalance: $.rewardInfo.getDomainRewardBalance(
-                    parentDomainName
-                )
+                rewardBalance: registryStorage
+                    .rewardInfo
+                    .getDomainRewardBalance(parentDomainName)
             });
         }
     }
@@ -245,17 +250,16 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     function withdrawRewardFor(
         string memory domainName
     ) external onlyOwner onlyRegisteredDomain(domainName) {
-        RegistryStorage storage $ = _getRegistryStorage();
-        address payable domainHolder = $.domainsMap[domainName];
-        uint256 rewardBalance = $.rewardInfo.getDomainRewardBalance(domainName);
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        address payable domainHolder = registryStorage.domainsMap[domainName];
+        uint256 rewardBalance = registryStorage
+            .rewardInfo
+            .getDomainRewardBalance(domainName);
 
         if (rewardBalance == 0) revert NothingToWithdraw();
 
         // reset domain reward balance
-        $.rewardInfo.resetFor(domainName);
-
-        if (!payTo(domainHolder, rewardBalance))
-            revert WithdrawRewardFailed(domainName);
+        registryStorage.rewardInfo.resetFor(domainName);
 
         // fire event
         emit RewardWithdrawed({
@@ -265,6 +269,9 @@ contract DomainRegistryV2 is OwnableUpgradeable {
             domainHolder: domainHolder,
             withdrawValue: rewardBalance
         });
+
+        if (!payTo(domainHolder, rewardBalance))
+            revert WithdrawRewardFailed(domainName);
     }
 
     /// @notice Returns actual price for a domain registration

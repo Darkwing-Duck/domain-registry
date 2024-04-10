@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.18;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {strings} from "solidity-stringutils/src/strings.sol";
@@ -26,10 +26,10 @@ contract DomainRegistry is OwnableUpgradeable {
     function _getRegistryStorage()
         private
         pure
-        returns (RegistryStorage storage $)
+        returns (RegistryStorage storage registryStorage)
     {
         assembly {
-            $.slot := REGISTRY_STORAGE_LOCATION
+            registryStorage.slot := REGISTRY_STORAGE_LOCATION
         }
     }
 
@@ -96,25 +96,15 @@ contract DomainRegistry is OwnableUpgradeable {
     function registerDomain(
         string memory domainName
     ) external payable availableDomain(domainName) {
-        RegistryStorage storage $ = _getRegistryStorage();
+        RegistryStorage storage registryStorage = _getRegistryStorage();
 
-        if (msg.value < $.registrationPrice)
+        if (msg.value < registryStorage.registrationPrice)
             revert PaymentForRegisteringDomainFailed(
                 "Not enough ether to register the domain"
             );
 
-        // excess refunding mechanism
-        if (msg.value > $.registrationPrice) {
-            uint256 excess = msg.value - $.registrationPrice;
-
-            if (!payTo(payable(msg.sender), excess))
-                revert PaymentForRegisteringDomainFailed(
-                    "The overpayment was detected, but refunding the excess was not succeed"
-                );
-        }
-
         // register new domain name
-        $.domainsMap[domainName] = payable(msg.sender);
+        registryStorage.domainsMap[domainName] = payable(msg.sender);
 
         // send event
         emit DomainRegistered({
@@ -124,6 +114,16 @@ contract DomainRegistry is OwnableUpgradeable {
             domainHolder: msg.sender,
             createdDate: block.timestamp
         });
+
+        // excess refunding mechanism
+        if (msg.value > registryStorage.registrationPrice) {
+            uint256 excess = msg.value - registryStorage.registrationPrice;
+
+            if (!payTo(payable(msg.sender), excess))
+                revert PaymentForRegisteringDomainFailed(
+                    "The overpayment was detected, but refunding the excess was not succeed"
+                );
+        }
     }
 
     /// @notice Resolves domain entry by the name
