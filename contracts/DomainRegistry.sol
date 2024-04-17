@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "solidity-stringutils/src/strings.sol";
-import "hardhat/console.sol";
 
 /// @author Serhii Smirnov
 /// @title Describes a registry of all registered domain names linked to a domain holder, who have registered the domain name
@@ -13,7 +12,7 @@ contract DomainRegistry is OwnableUpgradeable {
     /// @custom:storage-location erc7201:mycompanyname.storage.DomainRegistry
     struct RegistryStorage {
         /// @notice Price for registration sub-domains 
-        uint registrationPrice;
+        uint256 registrationPrice;
 
         /// @notice Mapping of top-level domain name to domain holder address
         mapping(string => address payable) domainsMap;
@@ -40,7 +39,7 @@ contract DomainRegistry is OwnableUpgradeable {
         address indexed indexedDomainHolder,
         string name,
         address domainHolder,
-        uint createdDate);
+        uint256 createdDate);
 
 
     /// @notice Indicates that the domain name is already registered and unavailable
@@ -54,16 +53,7 @@ contract DomainRegistry is OwnableUpgradeable {
 
     /// @notice Indicates that amount of money passed is not enough to register the domain name
     error PaymentForRegisteringDomainFailed(string message);
-    
 
-    /// @dev Used instead of constructor due to use upgradeable contract approach
-    function initialize(address owner_, uint registrationPrice_) initializer public {
-        __Ownable_init(owner_);
-        _getRegistryStorage().registrationPrice = registrationPrice_;
-    }
-    
-    receive() external payable { }
-    fallback() external payable { }
 
     /// @notice Guarantees that only available domains can be passed to a method with the modifier
     modifier availableDomain(string memory domain) {
@@ -78,16 +68,16 @@ contract DomainRegistry is OwnableUpgradeable {
             revert DomainWasNotRegistered();
         _;
     }
-
-    /// @notice Checks if domain has been already registered
-    /// @param domainName - The name of domain to check
-    function isDomainRegistered(string memory domainName)
-        public
-        view
-        returns (bool)
-    {
-        return _getRegistryStorage().domainsMap[domainName] != address(0x0);
+    
+    
+    /// @dev Used instead of constructor due to use upgradeable contract approach
+    function initialize(address owner_, uint256 registrationPrice_) initializer public {
+        __Ownable_init(owner_);
+        _getRegistryStorage().registrationPrice = registrationPrice_;
     }
+    
+    receive() external payable { }
+    fallback() external payable { }
 
     /// @notice Registers passed domain name and sends the event to outside world
     /// @param domainName - The name of domain to be registered
@@ -97,10 +87,10 @@ contract DomainRegistry is OwnableUpgradeable {
         availableDomain(domainName)
     {
         RegistryStorage storage $ = _getRegistryStorage();
-        
+
         if (msg.value < $.registrationPrice)
             revert PaymentForRegisteringDomainFailed("Not enough ether to register the domain");
-        
+
         // excess refunding mechanism
         if (msg.value > $.registrationPrice){
             uint256 excess = msg.value - $.registrationPrice;
@@ -122,6 +112,17 @@ contract DomainRegistry is OwnableUpgradeable {
         });
     }
 
+    /// @notice Changes price for domain registration
+    function changeRegistrationPrice(uint256 toValue) external onlyOwner {
+        _getRegistryStorage().registrationPrice = toValue;
+    }
+
+    /// @notice Withdraws all the balance to the owner's address 
+    function withdraw() external onlyOwner {
+        if (!payTo(payable(owner()), address(this).balance))
+            revert WithdrawFailed();
+    }
+
     /// @notice Resolves domain entry by the name
     /// @param domainName - The name of domain to be resolved
     function findDomainHolderBy(string memory domainName)
@@ -133,20 +134,19 @@ contract DomainRegistry is OwnableUpgradeable {
         return _getRegistryStorage().domainsMap[domainName];
     }
 
-    /// @notice Changes price for domain registration
-    function changeRegistrationPrice(uint toValue) external onlyOwner {
-        _getRegistryStorage().registrationPrice = toValue;
-    }
-
-    /// @notice Withdraws all the balance to the owner's address 
-    function withdraw() external onlyOwner {
-        if (!payTo(payable(owner()), address(this).balance))
-            revert WithdrawFailed();
-    }
-
     /// @notice Returns actual price for a domain registration
     function registrationPrice() external view returns (uint256) {
         return _getRegistryStorage().registrationPrice;
+    }
+
+    /// @notice Checks if domain has been already registered
+    /// @param domainName - The name of domain to check
+    function isDomainRegistered(string memory domainName)
+        public
+        view
+        returns (bool)
+    {
+        return _getRegistryStorage().domainsMap[domainName] != address(0x0);
     }
 
     /// @notice Sends 'amount' of ether to 'recipient' 

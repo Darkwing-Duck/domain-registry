@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "solidity-stringutils/src/strings.sol";
-import "hardhat/console.sol";
 import {RewardRegistry} from "../libraries/RewardRegistry.sol";
 
 /// @author Serhii Smirnov
@@ -15,7 +14,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @custom:storage-location erc7201:mycompanyname.storage.DomainRegistry
     struct RegistryStorage {
         /// @notice Price for registration sub-domains 
-        uint registrationPrice;
+        uint256 registrationPrice;
 
         /// @notice Mapping of domain name to domain holder address
         mapping(string => address payable) domainsMap;
@@ -45,7 +44,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         address indexed indexedDomainHolder,
         string name,
         address domainHolder,
-        uint createdDate);
+        uint256 createdDate);
 
     /// @notice Event that is notifying external world about applying reward to a parent node 
     /// @param indexedDomainName - Indexed name of domain who gain the reward
@@ -59,8 +58,8 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         address indexed indexedDomainHolder,
         string domainName,
         address domainHolder,
-        uint rewardValue,
-        uint rewardBalance);
+        uint256 rewardValue,
+        uint256 rewardBalance);
 
     /// @notice Event that is notifying external world about applying reward to a parent node 
     /// @param indexedDomainName - Indexed name of domain who withdraw the reward
@@ -73,7 +72,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         address indexed indexedDomainHolder,
         string domainName,
         address domainHolder,
-        uint withdrawValue);
+        uint256 withdrawValue);
 
 
     /// @notice Indicates that the domain name is already registered and unavailable
@@ -98,15 +97,6 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     error NothingToWithdraw();
 
 
-    /// @dev Used instead of constructor due to use upgradeable contract approach
-    function initialize(address owner_, uint registrationPrice_) initializer public {
-        __Ownable_init(owner_);
-        _getRegistryStorage().registrationPrice = registrationPrice_;
-    }
-
-    receive() external payable { }
-    fallback() external payable { }
-
     /// @notice Guarantees that only available domains can be passed to a method with the modifier
     modifier availableDomain(string memory domain) {
         if (isDomainRegistered(domain))
@@ -121,15 +111,15 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         _;
     }
 
-    /// @notice Checks if domain has been already registered
-    /// @param domainName - The name of domain to check
-    function isDomainRegistered(string memory domainName)
-        public
-        view
-        returns (bool)
-    {
-        return _getRegistryStorage().domainsMap[domainName] != address(0x0);
+
+    /// @dev Used instead of constructor due to use upgradeable contract approach
+    function initialize(address owner_, uint256 registrationPrice_) initializer public {
+        __Ownable_init(owner_);
+        _getRegistryStorage().registrationPrice = registrationPrice_;
     }
+
+    receive() external payable { }
+    fallback() external payable { }
 
     /// @notice Registers passed domain name and sends the event to outside world
     /// @param domainName - The name of domain to be registered
@@ -166,61 +156,13 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         });
     }
 
-    /// @notice Applies reward to all the parent domains of the specified domain name if exist
-    /// @param domainName - The name of domain to be processed
-    function tryRewardAllParentDomains(string memory domainName, RegistryStorage storage $) private {
-        strings.slice memory domainNameSlice = domainName.toSlice();
-        strings.slice memory delimiter = ".".toSlice();
-
-        // number entries of symbol '.' is equal to number of parent domains
-        uint numParentDomains = domainNameSlice.count(delimiter);
-        
-        if (numParentDomains < 1)
-            return;
-
-        string memory parentDomainName = "";
-
-        for(uint i = 0; i < numParentDomains; i++) {
-            parentDomainName = domainNameSlice.rsplit(delimiter).toString();
-
-            if (!isDomainRegistered(parentDomainName))
-                revert ParentDomainNameWasNotFound(parentDomainName);
-
-            // apply reward for parent domain
-            uint appliedReward = $.rewardInfo.applyFor(parentDomainName);
-            
-            address domainHolderAddress = $.domainsMap[parentDomainName];
-            
-            // fire event
-            emit RewardApplied({
-                indexedDomainName: parentDomainName,
-                indexedDomainHolder: domainHolderAddress,
-                domainName: parentDomainName,
-                domainHolder: domainHolderAddress,
-                rewardValue: appliedReward,
-                rewardBalance: $.rewardInfo.getDomainRewardBalance(parentDomainName)
-            });
-        }
-    }
-
-    /// @notice Resolves domain entry by the name
-    /// @param domainName - The name of domain to be resolved
-    function findDomainHolderBy(string memory domainName)
-        external
-        view
-        onlyRegisteredDomain(domainName)
-        returns (address)
-    {
-        return _getRegistryStorage().domainsMap[domainName];
-    }
-
     /// @notice Changes price for domain registration
-    function changeRegistrationPrice(uint toValue) external onlyOwner {
+    function changeRegistrationPrice(uint256 toValue) external onlyOwner {
         _getRegistryStorage().registrationPrice = toValue;
     }
 
     /// @notice Changes reward for domain's holder when registering new sub-domain
-    function changeDomainHolderReward(uint toValue) external onlyOwner {
+    function changeDomainHolderReward(uint256 toValue) external onlyOwner {
         _getRegistryStorage().rewardInfo.holderRegistrationReward = toValue;
     }
 
@@ -230,27 +172,27 @@ contract DomainRegistryV2 is OwnableUpgradeable {
 
         if (availableBalanceToWithdraw == 0)
             revert NothingToWithdraw();
-        
+
         if (!payTo(payable(owner()), availableBalanceToWithdraw))
             revert WithdrawFailed();
     }
 
     /// @notice Withdraws reward for specified domain name
-    function withdrawRewardFor(string memory domainName) 
-        external 
+    function withdrawRewardFor(string memory domainName)
+        external
         onlyOwner
         onlyRegisteredDomain(domainName)
     {
         RegistryStorage storage $ = _getRegistryStorage();
-        address payable domainHolder = $.domainsMap[domainName]; 
+        address payable domainHolder = $.domainsMap[domainName];
         uint256 rewardBalance = $.rewardInfo.getDomainRewardBalance(domainName);
-        
+
         if (rewardBalance == 0)
             revert NothingToWithdraw();
 
         // reset domain reward balance
         $.rewardInfo.resetFor(domainName);
-        
+
         if (!payTo(domainHolder, rewardBalance))
             revert WithdrawRewardFailed(domainName);
 
@@ -262,6 +204,17 @@ contract DomainRegistryV2 is OwnableUpgradeable {
             domainHolder: domainHolder,
             withdrawValue: rewardBalance
         });
+    }
+
+    /// @notice Resolves domain entry by the name
+    /// @param domainName - The name of domain to be resolved
+    function findDomainHolderBy(string memory domainName)
+        external
+        view
+        onlyRegisteredDomain(domainName)
+        returns (address)
+    {
+        return _getRegistryStorage().domainsMap[domainName];
     }
 
     /// @notice Returns actual price for a domain registration
@@ -282,6 +235,53 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @notice Returns total reward balance of all domain names
     function getTotalRewardBalance() external view returns (uint256) {
         return _getRegistryStorage().rewardInfo.totalRewardsBalance;
+    }
+
+    /// @notice Checks if domain has been already registered
+    /// @param domainName - The name of domain to check
+    function isDomainRegistered(string memory domainName)
+        public
+        view
+        returns (bool)
+    {
+        return _getRegistryStorage().domainsMap[domainName] != address(0x0);
+    }
+
+    /// @notice Applies reward to all the parent domains of the specified domain name if exist
+    /// @param domainName - The name of domain to be processed
+    function tryRewardAllParentDomains(string memory domainName, RegistryStorage storage $) private {
+        strings.slice memory domainNameSlice = domainName.toSlice();
+        strings.slice memory delimiter = ".".toSlice();
+
+        // number entries of symbol '.' is equal to number of parent domains
+        uint256 numParentDomains = domainNameSlice.count(delimiter);
+        
+        if (numParentDomains < 1)
+            return;
+
+        string memory parentDomainName = "";
+
+        for(uint256 i = 0; i < numParentDomains; i++) {
+            parentDomainName = domainNameSlice.rsplit(delimiter).toString();
+
+            if (!isDomainRegistered(parentDomainName))
+                revert ParentDomainNameWasNotFound(parentDomainName);
+
+            // apply reward for parent domain
+            uint256 appliedReward = $.rewardInfo.applyFor(parentDomainName);
+            
+            address domainHolderAddress = $.domainsMap[parentDomainName];
+            
+            // fire event
+            emit RewardApplied({
+                indexedDomainName: parentDomainName,
+                indexedDomainHolder: domainHolderAddress,
+                domainName: parentDomainName,
+                domainHolder: domainHolderAddress,
+                rewardValue: appliedReward,
+                rewardBalance: $.rewardInfo.getDomainRewardBalance(parentDomainName)
+            });
+        }
     }
 
     /// @notice Sends 'amount' of ether to 'recipient' 
