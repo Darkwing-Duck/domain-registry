@@ -1,12 +1,12 @@
-import {loadFixture,} from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import {loadFixture} from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import {ethers, upgrades} from "hardhat";
 import {expect} from "chai";
 import {TypedContractEvent, TypedEventLog} from "../typechain-types/common";
-import {DomainRegisteredEvent} from "../typechain-types/DomainRegistry";
+import {DomainRegisteredEvent} from "../typechain-types/contracts/DomainRegistryV2";
 
-describe("DomainRegistry", function () {
-    async function domainRegistryFixture() {
-
+describe("DomainRegistryV2", function () {
+    async function domainRegistryV2Fixture() {
+        
         // Contracts are deployed using the first signer/account by default
         const [owner, otherAccount] = await ethers.getSigners();
         const DomainRegistryProto = await ethers.getContractFactory("DomainRegistryV2");
@@ -14,10 +14,10 @@ describe("DomainRegistry", function () {
         const domainHolderReward = ethers.parseEther("0.1");
         const registrationPrice = ethers.parseEther("1");
         const domainRegistry = await upgrades.deployProxy(DomainRegistryProto, [owner.address, registrationPrice]);
-        domainRegistry.changeDomainHolderReward(domainHolderReward);
         
-        console.log(await domainRegistry.getAddress());
-
+        // initialize domain holder reward value 
+        await domainRegistry.changeDomainHolderReward(domainHolderReward);
+        
         return { domainRegistry, owner, otherAccount };
     }
 
@@ -38,7 +38,7 @@ describe("DomainRegistry", function () {
     
     it("Should revert with 'NotEnoughMoneyToRegisterDomain' error", async () => {
         const domainName = "com";
-        const { domainRegistry } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry } = await loadFixture(domainRegistryV2Fixture);
         const lessEtherToSend = await domainRegistry.registrationPrice() - ethers.parseEther("0.2");
         const options = { value: lessEtherToSend };
 
@@ -49,7 +49,7 @@ describe("DomainRegistry", function () {
 
     it("Should revert with 'ParentDomainNameWasNotFound' error", async () => {
         const domainName = "business.com";
-        const { domainRegistry } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry } = await loadFixture(domainRegistryV2Fixture);
         const options = { value: ethers.parseEther("1") };
 
         await expect(domainRegistry.registerDomain(domainName, options)).to.be.rejectedWith(
@@ -59,7 +59,7 @@ describe("DomainRegistry", function () {
 
     it("Should register domain and the domain became unavailable", async () => {
         const domainName = "com";
-        const { domainRegistry } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry } = await loadFixture(domainRegistryV2Fixture);
         const options = { value: ethers.parseEther("1") };
 
         // the domain com is available to register
@@ -78,7 +78,7 @@ describe("DomainRegistry", function () {
     it("Should register sub-domains and became unavailable", async () => {
         const rootDomain = "com";
         const subDomain = "business.com";
-        const { domainRegistry } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry } = await loadFixture(domainRegistryV2Fixture);
         const options = { value: ethers.parseEther("1") };
 
         await domainRegistry.registerDomain(rootDomain, options);
@@ -96,19 +96,19 @@ describe("DomainRegistry", function () {
         const rootDomain = "com";
         const subDomain1 = "business.com";
         const subDomain2 = "test.com";
-        
-        const { domainRegistry } = await loadFixture(domainRegistryFixture);
+
+        const { domainRegistry } = await loadFixture(domainRegistryV2Fixture);
         const options = { value: ethers.parseEther("1") };
         const domainHolderReward = await domainRegistry.domainHolderReward();
         let targetRewardBalance = domainHolderReward;
 
         await domainRegistry.registerDomain(rootDomain, options);
-        
+
         // on start reward balance is 0
         expect(await domainRegistry.getDomainRewardBalance(rootDomain)).to.be.equal(0);
 
         await domainRegistry.registerDomain(subDomain1, options);
-        
+
         console.log(await domainRegistry.getDomainRewardBalance(rootDomain));
         // after first sub-domain registration reward balance is 'domainHolderReward' value
         expect(await domainRegistry.getDomainRewardBalance(rootDomain)).to.be.equal(targetRewardBalance);
@@ -123,7 +123,7 @@ describe("DomainRegistry", function () {
 
     it("Should increase balance due to domain registering", async () => {
         const domainName = "com";
-        const { domainRegistry } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry } = await loadFixture(domainRegistryV2Fixture);
         const etherToSend = ethers.parseEther("1");
         const options = { value: etherToSend };
 
@@ -137,7 +137,7 @@ describe("DomainRegistry", function () {
     });
 
     it("Only owner can withdraw balance to its own address", async () => {
-        const { domainRegistry, owner, otherAccount } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry, owner, otherAccount } = await loadFixture(domainRegistryV2Fixture);
         const etherToSend = ethers.parseEther("1");
         const options = { value: etherToSend };
         const targetContractBalance = ethers.parseEther("3");
@@ -146,7 +146,7 @@ describe("DomainRegistry", function () {
         await domainRegistry.registerDomain("com", options);
         await domainRegistry.registerDomain("business.com", options);
 
-        await expect(domainRegistry.connect(otherAccount).withdraw()).to.be.rejectedWith(
+        await expect((domainRegistry.connect(otherAccount) as any).withdraw()).to.be.rejectedWith(
             'OwnableUnauthorizedAccount'
         );
 
@@ -161,7 +161,7 @@ describe("DomainRegistry", function () {
     });
 
     it("Should withdraw reward balance for a domain holder, only by owner", async () => {
-        const { domainRegistry, owner, otherAccount } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry, otherAccount } = await loadFixture(domainRegistryV2Fixture);
         const etherToSend = ethers.parseEther("1");
         const options = { value: etherToSend };
         const topDomain = "com";
@@ -172,8 +172,8 @@ describe("DomainRegistry", function () {
         await domainRegistry.registerDomain(subDomain, options);
 
         expect(await domainRegistry.getDomainRewardBalance(topDomain)).to.be.equal(rewardAmount);
-
-        await expect(domainRegistry.connect(otherAccount).withdrawRewardFor(topDomain)).to.be.rejectedWith(
+        
+        await expect((domainRegistry.connect(otherAccount) as any).withdrawRewardFor(topDomain)).to.be.rejectedWith(
             'OwnableUnauthorizedAccount'
         );
 
@@ -191,7 +191,7 @@ describe("DomainRegistry", function () {
     // @notice If sender will pay more then needed, contract should refund the excess 
     it("Should refund excess due to overpayment", async () => {
         const domainName = "com";
-        const { domainRegistry, owner } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry, owner } = await loadFixture(domainRegistryV2Fixture);
 
         const etherToSend = ethers.parseEther("3");
         const options = { value: etherToSend };
@@ -206,7 +206,9 @@ describe("DomainRegistry", function () {
         // calculate the full transaction cost
         const tx = await domainRegistry.registerDomain(domainName, options);
         const receipt = await tx.wait();
-        const gasUsed = receipt!.cumulativeGasUsed * receipt!.gasPrice;
+        const cumulativeGasUse: bigint = receipt!.cumulativeGasUsed;
+        const gasPrice: bigint = receipt!.gasPrice;
+        const gasUsed = cumulativeGasUse * gasPrice;
         const predictedOwnerBalance = ownerBalanceBefore - priceForRegistration - gasUsed;
 
         // balances after registration
@@ -221,11 +223,11 @@ describe("DomainRegistry", function () {
     });
 
     it("Only owner can change registration price", async () => {
-        const { domainRegistry, otherAccount } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry, otherAccount } = await loadFixture(domainRegistryV2Fixture);
         const newPrice = ethers.parseEther("3");
         const initialPrice = await domainRegistry.registrationPrice();
 
-        await expect(domainRegistry.connect(otherAccount).changeRegistrationPrice(newPrice)).to.be.rejectedWith(
+        await expect((domainRegistry.connect(otherAccount) as any).changeRegistrationPrice(newPrice)).to.be.rejectedWith(
             'OwnableUnauthorizedAccount'
         );
 
@@ -239,11 +241,11 @@ describe("DomainRegistry", function () {
     });
 
     it("Only owner can change domain's holder reward value", async () => {
-        const { domainRegistry, otherAccount } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry, otherAccount } = await loadFixture(domainRegistryV2Fixture);
         const newPrice = ethers.parseEther("0.2");
         const initialPrice = await domainRegistry.domainHolderReward();
 
-        await expect(domainRegistry.connect(otherAccount).changeDomainHolderReward(newPrice)).to.be.rejectedWith(
+        await expect((domainRegistry.connect(otherAccount) as any).changeDomainHolderReward(newPrice)).to.be.rejectedWith(
             'OwnableUnauthorizedAccount'
         );
 
@@ -259,7 +261,7 @@ describe("DomainRegistry", function () {
     it("Should print all the created domains", async () => {
         const domainsToRegisterByOwner = ["com", "org"];
         const domainsToRegisterByOtherAccount = ["io", "net"];
-        const { domainRegistry, otherAccount } = await loadFixture(domainRegistryFixture);
+        const { domainRegistry, otherAccount } = await loadFixture(domainRegistryV2Fixture);
         const etherToSend = await domainRegistry.registrationPrice();
         const options = { value: etherToSend };
 
@@ -270,15 +272,15 @@ describe("DomainRegistry", function () {
 
         // register domains by otherAccount
         for (let domainName of domainsToRegisterByOtherAccount) {
-            await domainRegistry.connect(otherAccount).registerDomain(domainName, options);
+            await (domainRegistry.connect(otherAccount) as any).registerDomain(domainName, options);
         }
 
         const filter = domainRegistry.filters.DomainRegistered();
-        const logs = await domainRegistry.queryFilter(filter);
+        const logs: any[] = await domainRegistry.queryFilter(filter);
         let sortedLogs = sortLogsByDate(logs);
-        
+
         console.log(`Number of registered domains: ${sortedLogs.length}`);
-        
+
         expect(logs.length).to.be.equal(4);
 
         console.log("\n");
@@ -295,7 +297,7 @@ describe("DomainRegistry", function () {
         // print detailed info of all registered sub-domains for domain 'org'
         console.log(`===== All registered domains by a domain holder (%s) ======`, otherAccount.address);
         const orgFilter = domainRegistry.filters.DomainRegistered(null, otherAccount);
-        const orgLogs = await domainRegistry.queryFilter(orgFilter);
+        const orgLogs: any[] = await domainRegistry.queryFilter(orgFilter);
         sortedLogs = sortLogsByDate(orgLogs);
 
         sortedLogs.map((log) => {
