@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {strings} from "solidity-stringutils/src/strings.sol";
 import {RewardRegistry} from "../libraries/RewardRegistry.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import "hardhat/console.sol";
 
 /// @author Serhii Smirnov
 /// @title Describes a registry of all registered domain names linked to a domain holder,
@@ -20,6 +22,8 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         mapping(string => address payable) domainsMap;
         /// @notice Reward information
         RewardRegistry.Info rewardInfo;
+
+        AggregatorV3Interface priceFeed;
     }
 
     // keccak256(abi.encode(uint256(keccak256("mycompanyname.storage.DomainRegistry")) - 1)) & ~bytes32(uint256(0xff))
@@ -117,10 +121,31 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @dev Used instead of constructor due to use upgradeable contract approach
     function initialize(
         address owner_,
-        uint256 registrationPrice_
+        uint256 registrationPrice_,
+        address priceFeed_
     ) public initializer {
         __Ownable_init(owner_);
-        _getRegistryStorage().registrationPrice = registrationPrice_;
+        
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        registryStorage.registrationPrice = registrationPrice_;
+        registryStorage.priceFeed = AggregatorV3Interface(priceFeed_);
+        
+        console.log("ssss");
+        console.logInt(Usd2Eth(3082));
+        console.log("ssss");
+
+        console.log("XXX");
+        console.logInt(Eth2Usd(100000000));
+        console.log("xxxx");
+
+    }
+
+    function Eth2Usd(int ethAmount_) internal view returns (int) {
+        return ethAmount_ * getLatestPrice() / 10 ** 8;
+    }
+    
+    function Usd2Eth(int usdAmount_) internal view returns (int) {
+        return usdAmount_ * 10 ** 16 / getLatestPrice();
     }
 
     receive() external payable {}
@@ -247,6 +272,18 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         string memory domainName
     ) public view returns (bool) {
         return _getRegistryStorage().domainsMap[domainName] != address(0x0);
+    }
+
+    function getLatestPrice() public view returns (int) {
+        // prettier-ignore
+        (
+            /* uint80 roundID */,
+            int price,
+            /*uint startedAt*/,
+            /*uint timeStamp*/,
+            /*uint80 answeredInRound*/
+        ) = _getRegistryStorage().priceFeed.latestRoundData();
+        return price;
     }
 
     /// @notice Applies reward to all the parent domains of the specified domain name if exist
