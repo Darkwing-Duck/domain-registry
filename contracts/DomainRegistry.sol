@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {strings} from "solidity-stringutils/src/strings.sol";
@@ -95,16 +95,6 @@ contract DomainRegistry is OwnableUpgradeable {
                 "Not enough ether to register the domain"
             );
 
-        // excess refunding mechanism
-        if (msg.value > $.registrationPrice) {
-            uint256 excess = msg.value - $.registrationPrice;
-
-            if (!payTo(payable(msg.sender), excess))
-                revert PaymentForRegisteringDomainFailed(
-                    "The overpayment was detected, but refunding the excess was not succeed"
-                );
-        }
-
         // register new domain name
         $.domainsMap[domainName] = payable(msg.sender);
 
@@ -116,6 +106,16 @@ contract DomainRegistry is OwnableUpgradeable {
             domainHolder: msg.sender,
             createdDate: block.timestamp
         });
+
+        // excess refunding mechanism
+        if (msg.value > $.registrationPrice) {
+            uint256 excess = msg.value - $.registrationPrice;
+
+            if (!payTo(payable(msg.sender), excess))
+                revert PaymentForRegisteringDomainFailed(
+                    "The overpayment was detected, but refunding the excess was not succeed"
+                );
+        }
     }
 
     /// @notice Changes price for domain registration

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {strings} from "solidity-stringutils/src/strings.sol";
@@ -218,6 +218,20 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     ) external payable availableDomain(domainName) {
         RegistryStorage storage registryStorage = _getRegistryStorage();
 
+        tryRewardAllParentDomains(domainName, registryStorage);
+
+        // register new domain name
+        registryStorage.domainsMap[domainName] = payable(msg.sender);
+
+        // send event
+        emit DomainRegistered({
+            indexedName: domainName,
+            indexedDomainHolder: msg.sender,
+            name: domainName,
+            domainHolder: msg.sender,
+            createdDate: block.timestamp
+        });
+
         if (msg.value < registryStorage.registrationPrice)
             revert PaymentForRegisteringDomainFailed(
                 "Not enough ether to register the domain"
@@ -232,20 +246,6 @@ contract DomainRegistryV2 is OwnableUpgradeable {
                     "The overpayment was detected, but refunding the excess was not succeed"
                 );
         }
-
-        tryRewardAllParentDomains(domainName, registryStorage);
-
-        // register new domain name
-        registryStorage.domainsMap[domainName] = payable(msg.sender);
-
-        // send event
-        emit DomainRegistered({
-            indexedName: domainName,
-            indexedDomainHolder: msg.sender,
-            name: domainName,
-            domainHolder: msg.sender,
-            createdDate: block.timestamp
-        });
     }
 
     /// @notice Changes price for domain registration
@@ -282,9 +282,6 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         // reset domain reward balance
         registryStorage.rewardInfo.resetFor(domainName);
 
-        if (!payTo(domainHolder, rewardBalance))
-            revert WithdrawRewardFailed(domainName);
-
         // fire event
         emit RewardWithdrawed({
             indexedDomainName: domainName,
@@ -293,6 +290,9 @@ contract DomainRegistryV2 is OwnableUpgradeable {
             domainHolder: domainHolder,
             withdrawValue: rewardBalance
         });
+
+        if (!payTo(domainHolder, rewardBalance))
+            revert WithdrawRewardFailed(domainName);
     }
 
     /// @notice Resolves domain entry by the name

@@ -7,6 +7,7 @@
     "hardhat:test:upgrade": "hardhat test ./test/DomainRegistryUpgrade.test.ts",
     "hardhat:compile": "hardhat compile",
     "lint:contracts": "npx solhint contracts/**/*.sol",
+    "slither": "npx slither ./",
     "hardhat:deploy": "hardhat run scripts/deploy.ts --network localhost",
     "hardhat:upgrade": "hardhat run scripts/upgrade.ts --network localhost",
     "hardhat:deploy:sepolia": "MNEMONIC=$(security find-generic-password -w -s 'mnemonic') INFURA_API_KEY=$(security find-generic-password -w -s 'infura-api-key') hardhat run scripts/deploy.ts --network sepolia",
