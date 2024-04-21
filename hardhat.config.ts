@@ -14,6 +14,7 @@ module.exports = {
                 path: "m/44'/60'/0'/0",
                 initialIndex: 0,
                 count: 20,
+                chainId: 1337,
             },
         },
         sepolia: {

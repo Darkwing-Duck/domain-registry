@@ -12,19 +12,27 @@ describe("DomainRegistryV2", function () {
             await ethers.getContractFactory("DomainRegistryV2");
 
         const priceFeed = await deployMockPriceFeed();
+        const token = await deployMockToken();
         const priceFeedAddress = await priceFeed.getAddress();
+        const tokenAddress = await token.getAddress();
         const domainHolderReward = ethers.parseEther("0.1");
         const registrationPrice = ethers.parseEther("1");
         const domainRegistry = await upgrades.deployProxy(DomainRegistryProto, [
             owner.address,
             registrationPrice,
-            priceFeedAddress
+            priceFeedAddress,
+            tokenAddress
         ]);
 
         // initialize domain holder reward value
         await domainRegistry.changeDomainHolderReward(domainHolderReward);
 
-        return {domainRegistry, owner, otherAccount};
+        return {domainRegistry, token, owner, otherAccount};
+    }
+
+    async function deployMockToken() {
+        const mockUSDCTokenFactory = await ethers.getContractFactory("MockUSDCToken")
+        return mockUSDCTokenFactory.deploy();
     }
 
     async function deployMockPriceFeed() {
@@ -386,10 +394,25 @@ describe("DomainRegistryV2", function () {
         console.log(`====================================================`);
     });
 
-    it("xxx", async () => {
-        const {domainRegistry} = await loadFixture(domainRegistryV2Fixture);
-        const price = await domainRegistry.getLatestPrice();
+    it.only("xxx", async () => {
+        const {domainRegistry, token, owner} = await loadFixture(domainRegistryV2Fixture);
+        const registryAddress = await domainRegistry.getAddress();
+        const decimals = await token.decimals();
+        // const price = await domainRegistry.getLatestPrice();
+        const usdPrice = 50n * 10n ** decimals;
+        const initialSenderUsdBalance = await token.balanceOf(owner.address);
+        const targetSenderUsdBalance = initialSenderUsdBalance - usdPrice;
         
-        console.log("price - ", price)
+        console.log("usdPrice - ", usdPrice)
+        // const usdPrice = 50;
+        // await token.approve(registryAddress, usdPrice);
+
+        expect(await token.balanceOf(registryAddress)).to.be.equal(0);
+
+        await token.approve(registryAddress, usdPrice);
+        await domainRegistry.depositInUsdc();
+
+        expect(await token.balanceOf(registryAddress)).to.be.equal(usdPrice);
+        expect(await token.balanceOf(owner.address)).to.be.equal(targetSenderUsdBalance);
     });
 });

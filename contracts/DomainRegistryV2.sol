@@ -5,6 +5,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {strings} from "solidity-stringutils/src/strings.sol";
 import {RewardRegistry} from "../libraries/RewardRegistry.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "hardhat/console.sol";
 
 /// @author Serhii Smirnov
@@ -24,6 +25,8 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         RewardRegistry.Info rewardInfo;
 
         AggregatorV3Interface priceFeed;
+
+        ERC20 usdcContractAddress;
     }
 
     // keccak256(abi.encode(uint256(keccak256("mycompanyname.storage.DomainRegistry")) - 1)) & ~bytes32(uint256(0xff))
@@ -34,10 +37,10 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     function _getRegistryStorage()
         private
         pure
-        returns (RegistryStorage storage $)
+        returns (RegistryStorage storage registryStorage)
     {
         assembly {
-            $.slot := REGISTRY_STORAGE_LOCATION
+            registryStorage.slot := REGISTRY_STORAGE_LOCATION
         }
     }
 
@@ -122,50 +125,107 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     function initialize(
         address owner_,
         uint256 registrationPrice_,
-        address priceFeed_
+        address priceFeed_,
+        address usdcContractAddress_
     ) public initializer {
         __Ownable_init(owner_);
         
         RegistryStorage storage registryStorage = _getRegistryStorage();
         registryStorage.registrationPrice = registrationPrice_;
         registryStorage.priceFeed = AggregatorV3Interface(priceFeed_);
+        registryStorage.usdcContractAddress = ERC20(usdcContractAddress_);
         
         console.log("ssss");
-        console.logInt(Usd2Eth(3082));
+        console.logUint(Usd2Eth(3082 * 10 ** 6));
         console.log("ssss");
 
         console.log("XXX");
-        console.logInt(Eth2Usd(100000000));
+        console.logUint(Eth2Usd(1000000000000000000));
         console.log("xxxx");
 
     }
 
-    function Eth2Usd(int ethAmount_) internal view returns (int) {
-        return ethAmount_ * getLatestPrice() / 10 ** 8;
+    function Eth2Usd(uint256 ethAmount_) internal view returns (uint256) {
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        uint8 tokenDecimals = registryStorage.usdcContractAddress.decimals();
+//        console.log("Decimals");
+//        console.logUint(tokenDecimals);
+//        console.log("Eth Amount");
+//        console.logUint(ethAmount_);
+//        console.log("Price");
+//        console.logUint(getLatestPrice());
+        
+        uint256 usdPrice = 50 * 10 ** 18;
+        uint256 ethPriceInUsd = getLatestPrice();
+
+        console.log("usdPrice");
+        console.logUint(usdPrice);
+
+        console.log("ethPriceInUsd");
+        console.logUint(ethPriceInUsd);
+
+        uint256 requiredEth = (usdPrice * 10 ** 18) / ethPriceInUsd;
+        
+        console.log("ethRequired");
+        console.logUint(requiredEth);
+        
+        uint256 result = ethAmount_ * getLatestPrice();
+        
+        if (tokenDecimals < 18) {
+            result = result / 10 ** (18 - tokenDecimals);
+        } 
+        
+        return result ;
     }
     
-    function Usd2Eth(int usdAmount_) internal view returns (int) {
-        return usdAmount_ * 10 ** 16 / getLatestPrice();
+    function Usd2Eth(uint256 usdAmount_) internal view returns (uint256) {
+        uint256 usdPrice = 50 * 10 ** 18;
+        uint256 ethPriceInUsd = getLatestPrice();
+
+        console.log("usdPrice");
+        console.logUint(usdPrice);
+
+        console.log("ethPriceInUsd");
+        console.logUint(ethPriceInUsd);
+
+        uint256 requiredEth = (usdPrice * 10 ** 18) / ethPriceInUsd;
+
+        console.log("ethRequired");
+        console.logUint(requiredEth);
     }
 
     receive() external payable {}
     fallback() external payable {}
+    
+    function depositInUsdc() 
+        external 
+        payable 
+    {
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        uint8 decimals = registryStorage.usdcContractAddress.decimals();
+
+//        uint256 usdcPrice = registryStorage.registrationPrice * 10 ** decimals; // 50$ with decimals
+        uint256 usdcPrice = 50 * 10 ** decimals; // 50$
+        
+        bool success = registryStorage.usdcContractAddress.transferFrom(msg.sender, address(this), usdcPrice);
+        require(success, "Transaction was not successful");
+    }
 
     /// @notice Registers passed domain name and sends the event to outside world
     /// @param domainName - The name of domain to be registered
     function registerDomain(
         string memory domainName
     ) external payable availableDomain(domainName) {
-        RegistryStorage storage $ = _getRegistryStorage();
+        RegistryStorage storage registryStorage = _getRegistryStorage();
 
-        if (msg.value < $.registrationPrice)
+        if (msg.value < registryStorage.registrationPrice)
             revert PaymentForRegisteringDomainFailed(
                 "Not enough ether to register the domain"
             );
 
         // excess refunding mechanism
-        if (msg.value > $.registrationPrice) {
-            uint256 excess = msg.value - $.registrationPrice;
+        if (msg.value > registryStorage.registrationPrice) {
+            uint256 excess = msg.value - registryStorage.registrationPrice;
 
             if (!payTo(payable(msg.sender), excess))
                 revert PaymentForRegisteringDomainFailed(
@@ -173,10 +233,10 @@ contract DomainRegistryV2 is OwnableUpgradeable {
                 );
         }
 
-        tryRewardAllParentDomains(domainName, $);
+        tryRewardAllParentDomains(domainName, registryStorage);
 
         // register new domain name
-        $.domainsMap[domainName] = payable(msg.sender);
+        registryStorage.domainsMap[domainName] = payable(msg.sender);
 
         // send event
         emit DomainRegistered({
@@ -213,14 +273,14 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     function withdrawRewardFor(
         string memory domainName
     ) external onlyOwner onlyRegisteredDomain(domainName) {
-        RegistryStorage storage $ = _getRegistryStorage();
-        address payable domainHolder = $.domainsMap[domainName];
-        uint256 rewardBalance = $.rewardInfo.getDomainRewardBalance(domainName);
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        address payable domainHolder = registryStorage.domainsMap[domainName];
+        uint256 rewardBalance = registryStorage.rewardInfo.getDomainRewardBalance(domainName);
 
         if (rewardBalance == 0) revert NothingToWithdraw();
 
         // reset domain reward balance
-        $.rewardInfo.resetFor(domainName);
+        registryStorage.rewardInfo.resetFor(domainName);
 
         if (!payTo(domainHolder, rewardBalance))
             revert WithdrawRewardFailed(domainName);
@@ -274,23 +334,29 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         return _getRegistryStorage().domainsMap[domainName] != address(0x0);
     }
 
-    function getLatestPrice() public view returns (int) {
+    function getLatestPrice() public view returns (uint256) {
         // prettier-ignore
         (
             /* uint80 roundID */,
-            int price,
+            int256 price,
             /*uint startedAt*/,
             /*uint timeStamp*/,
             /*uint80 answeredInRound*/
         ) = _getRegistryStorage().priceFeed.latestRoundData();
-        return price;
+
+        // get priceFeed decimals
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        uint8 decimals = registryStorage.priceFeed.decimals();
+        
+        // return value * 10ˆ18
+        return uint256(price) * 10 ** (18 - decimals);
     }
 
     /// @notice Applies reward to all the parent domains of the specified domain name if exist
     /// @param domainName - The name of domain to be processed
     function tryRewardAllParentDomains(
         string memory domainName,
-        RegistryStorage storage $
+        RegistryStorage storage registryStorage
     ) private {
         strings.slice memory domainNameSlice = domainName.toSlice();
         strings.slice memory delimiter = ".".toSlice();
@@ -309,9 +375,9 @@ contract DomainRegistryV2 is OwnableUpgradeable {
                 revert ParentDomainNameWasNotFound(parentDomainName);
 
             // apply reward for parent domain
-            uint256 appliedReward = $.rewardInfo.applyFor(parentDomainName);
+            uint256 appliedReward = registryStorage.rewardInfo.applyFor(parentDomainName);
 
-            address domainHolderAddress = $.domainsMap[parentDomainName];
+            address domainHolderAddress = registryStorage.domainsMap[parentDomainName];
 
             // fire event
             emit RewardApplied({
@@ -320,7 +386,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
                 domainName: parentDomainName,
                 domainHolder: domainHolderAddress,
                 rewardValue: appliedReward,
-                rewardBalance: $.rewardInfo.getDomainRewardBalance(
+                rewardBalance: registryStorage.rewardInfo.getDomainRewardBalance(
                     parentDomainName
                 )
             });
