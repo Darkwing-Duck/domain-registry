@@ -18,7 +18,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @custom:storage-location erc7201:mycompanyname.storage.DomainRegistry
     struct RegistryStorage {
         /// @notice Price for registration sub-domains
-        uint256 registrationPriceUsd;
+        uint256 registrationPrice;
         /// @notice Mapping of domain name to domain holder address
         mapping(string => address payable) domainsMap;
         /// @notice Reward information
@@ -130,7 +130,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         __Ownable_init(owner_);
         
         RegistryStorage storage registryStorage = _getRegistryStorage();
-        registryStorage.registrationPriceUsd = registrationPriceUsd_;
+        registryStorage.registrationPrice = registrationPriceUsd_;
         registryStorage.priceFeed = AggregatorV3Interface(priceFeed_);
         registryStorage.usdContractAddress = ERC20(usdcContractAddress_);
     }
@@ -156,7 +156,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     {
         RegistryStorage storage registryStorage = _getRegistryStorage();
         uint8 decimals = registryStorage.usdContractAddress.decimals();
-        uint256 usdPrice = registryStorage.registrationPriceUsd * 10 ** decimals; // 50$ with decimals
+        uint256 usdPrice = registryStorage.registrationPrice * 10 ** decimals; // 50$ with decimals
 
         _registerDomainInternal(domainName, registryStorage.usdRewardInfo);
         
@@ -177,7 +177,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         _registerDomainInternal(domainName, registryStorage.ethRewardInfo);
         
         // convert registration price from usd to wei
-        uint256 registrationPriceInWei = usd2Eth(registryStorage.registrationPriceUsd);
+        uint256 registrationPriceInWei = usd2Eth(registryStorage.registrationPrice);
 
         if (msg.value < registrationPriceInWei)
             revert PaymentForRegisteringDomainFailed(
@@ -197,7 +197,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
 
     /// @notice Changes Usd price for domain registration
     function changeRegistrationPriceUsd(uint256 toValue) external onlyOwner {
-        _getRegistryStorage().registrationPriceUsd = toValue;
+        _getRegistryStorage().registrationPrice = toValue;
     }
 
     /// @notice Changes Usd reward for domain's holder when registering new sub-domain
@@ -299,7 +299,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
 
     /// @notice Returns actual Usd price for a domain registration
     function registrationPriceUsd() external view returns (uint256) {
-        return _getRegistryStorage().registrationPriceUsd;
+        return _getRegistryStorage().registrationPrice;
     }
 
     /// @notice Returns actual domain's holder Usd reward for a domain registration

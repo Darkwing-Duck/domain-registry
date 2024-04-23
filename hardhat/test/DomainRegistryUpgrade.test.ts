@@ -64,19 +64,19 @@ describe("DomainRegistry upgrade", function () {
     const DomainRegistryProtoV2 =
       await ethers.getContractFactory("DomainRegistryV2");
     const address = await domainRegistry.getAddress();
-    const domainHolderReward = ethers.parseEther("0.1");
+    const domainHolderReward = 1n;
 
     domainRegistry = await upgrades.upgradeProxy(
       address,
       DomainRegistryProtoV2,
     );
 
-    domainRegistry.changeDomainHolderReward(domainHolderReward);
+    await domainRegistry.changeDomainHolderRewardUsd(domainHolderReward);
 
-    expect(await domainRegistry.registrationPrice()).to.equal(
+    expect(await domainRegistry.registrationPriceUsd()).to.equal(
       registrationPrice,
     );
-    expect(await domainRegistry.domainHolderReward()).to.equal(
+    expect(await domainRegistry.domainHolderRewardUsd()).to.equal(
       domainHolderReward,
     );
     expect(await ethers.provider.getBalance(domainRegistry)).to.equal(
