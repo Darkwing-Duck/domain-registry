@@ -18,15 +18,16 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @custom:storage-location erc7201:mycompanyname.storage.DomainRegistry
     struct RegistryStorage {
         /// @notice Price for registration sub-domains
-        uint256 registrationPrice;
+        uint256 registrationPriceUsd;
         /// @notice Mapping of domain name to domain holder address
         mapping(string => address payable) domainsMap;
         /// @notice Reward information
-        RewardRegistry.Info rewardInfo;
+        RewardRegistry.Info ethRewardInfo;
+        RewardRegistry.Info usdRewardInfo;
 
         AggregatorV3Interface priceFeed;
 
-        ERC20 usdcContractAddress;
+        ERC20 usdContractAddress;
     }
 
     // keccak256(abi.encode(uint256(keccak256("mycompanyname.storage.DomainRegistry")) - 1)) & ~bytes32(uint256(0xff))
@@ -58,29 +59,27 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         uint256 createdDate
     );
 
-    /// @notice Event that is notifying external world about applying reward to a parent node
-    /// @param indexedDomainName - Indexed name of domain who gain the reward
-    /// @param indexedDomainHolder - Indexed domain holder to simplify filtering events by the holder
-    /// @param domainName - The name of domain who gain the reward
-    /// @param domainHolder - Domain holder of domain
-    /// @param rewardValue - Reward value that was applied to the domain
-    /// @param rewardBalance - Reward balance for the domain after reward was applied
-    event RewardApplied(
-        string indexed indexedDomainName,
-        address indexed indexedDomainHolder,
-        string domainName,
-        address domainHolder,
-        uint256 rewardValue,
-        uint256 rewardBalance
-    );
-
-    /// @notice Event that is notifying external world about applying reward to a parent node
+    /// @notice Event that is notifying external world about applying ETH reward to a parent node
     /// @param indexedDomainName - Indexed name of domain who withdraw the reward
     /// @param indexedDomainHolder - Indexed domain holder to simplify filtering events by the holder
     /// @param domainName - The name of domain who withdraw the reward
     /// @param domainHolder - Domain holder of domain
     /// @param withdrawValue - Value that was withdrawed to the domain holder
-    event RewardWithdrawed(
+    event RewardEthWithdrawed(
+        string indexed indexedDomainName,
+        address indexed indexedDomainHolder,
+        string domainName,
+        address domainHolder,
+        uint256 withdrawValue
+    );
+
+    /// @notice Event that is notifying external world about applying USD reward to a parent node
+    /// @param indexedDomainName - Indexed name of domain who withdraw the reward
+    /// @param indexedDomainHolder - Indexed domain holder to simplify filtering events by the holder
+    /// @param domainName - The name of domain who withdraw the reward
+    /// @param domainHolder - Domain holder of domain
+    /// @param withdrawValue - Value that was withdrawed to the domain holder
+    event RewardUsdWithdrawed(
         string indexed indexedDomainName,
         address indexed indexedDomainHolder,
         string domainName,
@@ -124,91 +123,47 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @dev Used instead of constructor due to use upgradeable contract approach
     function initialize(
         address owner_,
-        uint256 registrationPrice_,
+        uint256 registrationPriceUsd_,
         address priceFeed_,
         address usdcContractAddress_
     ) public initializer {
         __Ownable_init(owner_);
         
         RegistryStorage storage registryStorage = _getRegistryStorage();
-        registryStorage.registrationPrice = registrationPrice_;
+        registryStorage.registrationPriceUsd = registrationPriceUsd_;
         registryStorage.priceFeed = AggregatorV3Interface(priceFeed_);
-        registryStorage.usdcContractAddress = ERC20(usdcContractAddress_);
-        
-        console.log("ssss");
-        console.logUint(Usd2Eth(3082 * 10 ** 6));
-        console.log("ssss");
-
-        console.log("XXX");
-        console.logUint(Eth2Usd(1000000000000000000));
-        console.log("xxxx");
-
+        registryStorage.usdContractAddress = ERC20(usdcContractAddress_);
     }
 
-    function Eth2Usd(uint256 ethAmount_) internal view returns (uint256) {
-        RegistryStorage storage registryStorage = _getRegistryStorage();
-        uint8 tokenDecimals = registryStorage.usdcContractAddress.decimals();
-//        console.log("Decimals");
-//        console.logUint(tokenDecimals);
-//        console.log("Eth Amount");
-//        console.logUint(ethAmount_);
-//        console.log("Price");
-//        console.logUint(getLatestPrice());
+    /// @notice Converts usd value without decimals to eth value with 18 decimals
+    /// @param usdAmount_ - usd value without decimals
+    function usd2Eth(uint256 usdAmount_) public view returns (uint256) {
+        uint256 usdPrice = usdAmount_ * 10 ** 18;
+        uint256 ethPriceInUsd = _getLatestPrice();
         
-        uint256 usdPrice = 50 * 10 ** 18;
-        uint256 ethPriceInUsd = getLatestPrice();
-
-        console.log("usdPrice");
-        console.logUint(usdPrice);
-
-        console.log("ethPriceInUsd");
-        console.logUint(ethPriceInUsd);
-
         uint256 requiredEth = (usdPrice * 10 ** 18) / ethPriceInUsd;
-        
-        console.log("ethRequired");
-        console.logUint(requiredEth);
-        
-        uint256 result = ethAmount_ * getLatestPrice();
-        
-        if (tokenDecimals < 18) {
-            result = result / 10 ** (18 - tokenDecimals);
-        } 
-        
-        return result ;
-    }
-    
-    function Usd2Eth(uint256 usdAmount_) internal view returns (uint256) {
-        uint256 usdPrice = 50 * 10 ** 18;
-        uint256 ethPriceInUsd = getLatestPrice();
-
-        console.log("usdPrice");
-        console.logUint(usdPrice);
-
-        console.log("ethPriceInUsd");
-        console.logUint(ethPriceInUsd);
-
-        uint256 requiredEth = (usdPrice * 10 ** 18) / ethPriceInUsd;
-
-        console.log("ethRequired");
-        console.logUint(requiredEth);
+        return requiredEth;
     }
 
     receive() external payable {}
     fallback() external payable {}
-    
-    function depositInUsdc() 
-        external 
-        payable 
+
+    /// @notice Registers passed domain name for Usd token
+    /// @param domainName - The name of domain to be registered
+    function registerDomainWithUsd(string memory domainName)
+        external
+        availableDomain(domainName)
     {
         RegistryStorage storage registryStorage = _getRegistryStorage();
-        uint8 decimals = registryStorage.usdcContractAddress.decimals();
+        uint8 decimals = registryStorage.usdContractAddress.decimals();
+        uint256 usdPrice = registryStorage.registrationPriceUsd * 10 ** decimals; // 50$ with decimals
 
-//        uint256 usdcPrice = registryStorage.registrationPrice * 10 ** decimals; // 50$ with decimals
-        uint256 usdcPrice = 50 * 10 ** decimals; // 50$
+        _registerDomainInternal(domainName, registryStorage.usdRewardInfo);
         
-        bool success = registryStorage.usdcContractAddress.transferFrom(msg.sender, address(this), usdcPrice);
-        require(success, "Transaction was not successful");
+        bool success = registryStorage.usdContractAddress.transferFrom(msg.sender, address(this), usdPrice);
+
+        if (!success)
+            revert PaymentForRegisteringDomainFailed("Transaction was not successful");
     }
 
     /// @notice Registers passed domain name and sends the event to outside world
@@ -218,28 +173,20 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     ) external payable availableDomain(domainName) {
         RegistryStorage storage registryStorage = _getRegistryStorage();
 
-        tryRewardAllParentDomains(domainName, registryStorage);
+        _updateHolderRewardEth();
+        _registerDomainInternal(domainName, registryStorage.ethRewardInfo);
+        
+        // convert registration price from usd to wei
+        uint256 registrationPriceInWei = usd2Eth(registryStorage.registrationPriceUsd);
 
-        // register new domain name
-        registryStorage.domainsMap[domainName] = payable(msg.sender);
-
-        // send event
-        emit DomainRegistered({
-            indexedName: domainName,
-            indexedDomainHolder: msg.sender,
-            name: domainName,
-            domainHolder: msg.sender,
-            createdDate: block.timestamp
-        });
-
-        if (msg.value < registryStorage.registrationPrice)
+        if (msg.value < registrationPriceInWei)
             revert PaymentForRegisteringDomainFailed(
                 "Not enough ether to register the domain"
             );
 
         // excess refunding mechanism
-        if (msg.value > registryStorage.registrationPrice) {
-            uint256 excess = msg.value - registryStorage.registrationPrice;
+        if (msg.value > registrationPriceInWei) {
+            uint256 excess = msg.value - registrationPriceInWei;
 
             if (!payTo(payable(msg.sender), excess))
                 revert PaymentForRegisteringDomainFailed(
@@ -248,20 +195,20 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         }
     }
 
-    /// @notice Changes price for domain registration
-    function changeRegistrationPrice(uint256 toValue) external onlyOwner {
-        _getRegistryStorage().registrationPrice = toValue;
+    /// @notice Changes Usd price for domain registration
+    function changeRegistrationPriceUsd(uint256 toValue) external onlyOwner {
+        _getRegistryStorage().registrationPriceUsd = toValue;
     }
 
-    /// @notice Changes reward for domain's holder when registering new sub-domain
-    function changeDomainHolderReward(uint256 toValue) external onlyOwner {
-        _getRegistryStorage().rewardInfo.holderRegistrationReward = toValue;
+    /// @notice Changes Usd reward for domain's holder when registering new sub-domain
+    function changeDomainHolderRewardUsd(uint256 toValue) external onlyOwner {
+        _getRegistryStorage().usdRewardInfo.rewardValue = toValue;
     }
 
-    /// @notice Withdraws all the balance to the owner's address
-    function withdraw() external onlyOwner {
+    /// @notice Withdraws all the Eth balance to the owner's address
+    function withdrawEth() external onlyOwner {
         uint256 availableBalanceToWithdraw = address(this).balance -
-            _getRegistryStorage().rewardInfo.totalRewardsBalance;
+            _getRegistryStorage().ethRewardInfo.totalRewardsBalance;
 
         if (availableBalanceToWithdraw == 0) revert NothingToWithdraw();
 
@@ -269,21 +216,38 @@ contract DomainRegistryV2 is OwnableUpgradeable {
             revert WithdrawFailed();
     }
 
-    /// @notice Withdraws reward for specified domain name
-    function withdrawRewardFor(
+    /// @notice Withdraws all the Usd balance to the owner's address
+    function withdrawUsd() external onlyOwner {
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        uint8 tokenDecimals = registryStorage.usdContractAddress.decimals();
+        uint256 usdBalance = registryStorage.usdContractAddress.balanceOf(address(this));
+        uint256 availableBalanceToWithdraw = usdBalance - registryStorage.usdRewardInfo.totalRewardsBalance * 10 ** tokenDecimals;
+        address owner = owner();
+
+        if (availableBalanceToWithdraw == 0) revert NothingToWithdraw();
+
+        registryStorage.usdContractAddress.approve(address(this), availableBalanceToWithdraw);
+        bool success = registryStorage.usdContractAddress.transferFrom(address(this), owner, availableBalanceToWithdraw);
+
+        if (!success)
+            revert WithdrawFailed();
+    }
+
+    /// @notice Withdraws Eth reward for specified domain name
+    function withdrawEthRewardFor(
         string memory domainName
     ) external onlyOwner onlyRegisteredDomain(domainName) {
         RegistryStorage storage registryStorage = _getRegistryStorage();
         address payable domainHolder = registryStorage.domainsMap[domainName];
-        uint256 rewardBalance = registryStorage.rewardInfo.getDomainRewardBalance(domainName);
+        uint256 rewardBalance = registryStorage.ethRewardInfo.getDomainRewardBalance(domainName);
 
         if (rewardBalance == 0) revert NothingToWithdraw();
 
         // reset domain reward balance
-        registryStorage.rewardInfo.resetFor(domainName);
+        registryStorage.ethRewardInfo.resetFor(domainName);
 
         // fire event
-        emit RewardWithdrawed({
+        emit RewardEthWithdrawed({
             indexedDomainName: domainName,
             indexedDomainHolder: domainHolder,
             domainName: domainName,
@@ -295,6 +259,36 @@ contract DomainRegistryV2 is OwnableUpgradeable {
             revert WithdrawRewardFailed(domainName);
     }
 
+    /// @notice Withdraws Usd reward for specified domain name
+    function withdrawUsdRewardFor(
+        string memory domainName
+    ) external onlyOwner onlyRegisteredDomain(domainName) {
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        address domainHolder = registryStorage.domainsMap[domainName];
+        uint8 tokenDecimals = registryStorage.usdContractAddress.decimals();
+        uint256 rewardBalance = registryStorage.usdRewardInfo.getDomainRewardBalance(domainName) * 10 ** tokenDecimals;
+
+        if (rewardBalance == 0) revert NothingToWithdraw();
+
+        // reset domain reward balance
+        registryStorage.ethRewardInfo.resetFor(domainName);
+
+        // fire event
+        emit RewardUsdWithdrawed({
+            indexedDomainName: domainName,
+            indexedDomainHolder: domainHolder,
+            domainName: domainName,
+            domainHolder: domainHolder,
+            withdrawValue: rewardBalance
+        });
+
+        registryStorage.usdContractAddress.approve(address(this), rewardBalance);
+        bool success = registryStorage.usdContractAddress.transferFrom(address(this), domainHolder, rewardBalance);
+
+        if (!success)
+            revert WithdrawRewardFailed(domainName);
+    }
+
     /// @notice Resolves domain entry by the name
     /// @param domainName - The name of domain to be resolved
     function findDomainHolderBy(
@@ -303,27 +297,38 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         return _getRegistryStorage().domainsMap[domainName];
     }
 
-    /// @notice Returns actual price for a domain registration
-    function registrationPrice() external view returns (uint256) {
-        return _getRegistryStorage().registrationPrice;
+    /// @notice Returns actual Usd price for a domain registration
+    function registrationPriceUsd() external view returns (uint256) {
+        return _getRegistryStorage().registrationPriceUsd;
     }
 
-    /// @notice Returns actual domain's holder reward for a domain registration
-    function domainHolderReward() external view returns (uint256) {
-        return _getRegistryStorage().rewardInfo.holderRegistrationReward;
+    /// @notice Returns actual domain's holder Usd reward for a domain registration
+    function domainHolderRewardUsd() external view returns (uint256) {
+        return _getRegistryStorage().usdRewardInfo.rewardValue;
     }
 
-    /// @notice Returns reward balance of domain's holder
-    function getDomainRewardBalance(
+    /// @notice Returns Usd reward balance of domain's holder
+    function getDomainRewardBalanceUsd(
         string memory domainName
     ) external view returns (uint256) {
-        return
-            _getRegistryStorage().rewardInfo.getDomainRewardBalance(domainName);
+        return _getRegistryStorage().usdRewardInfo.getDomainRewardBalance(domainName);
     }
 
-    /// @notice Returns total reward balance of all domain names
-    function getTotalRewardBalance() external view returns (uint256) {
-        return _getRegistryStorage().rewardInfo.totalRewardsBalance;
+    /// @notice Returns Eth reward balance of domain's holder
+    function getDomainRewardBalanceEth(
+        string memory domainName
+    ) external view returns (uint256) {
+        return _getRegistryStorage().ethRewardInfo.getDomainRewardBalance(domainName);
+    }
+
+    /// @notice Returns total Usd reward balance of all domain names
+    function getTotalRewardBalanceUsd() external view returns (uint256) {
+        return _getRegistryStorage().usdRewardInfo.totalRewardsBalance;
+    }
+
+    /// @notice Returns total Eth reward balance of all domain names
+    function getTotalRewardBalanceEth() external view returns (uint256) {
+        return _getRegistryStorage().ethRewardInfo.totalRewardsBalance;
     }
 
     /// @notice Checks if domain has been already registered
@@ -334,7 +339,8 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         return _getRegistryStorage().domainsMap[domainName] != address(0x0);
     }
 
-    function getLatestPrice() public view returns (uint256) {
+    // @notice Returns actual eth price from feed with 18 decimals
+    function _getLatestPrice() private view returns (uint256) {
         // prettier-ignore
         (
             /* uint80 roundID */,
@@ -354,9 +360,9 @@ contract DomainRegistryV2 is OwnableUpgradeable {
 
     /// @notice Applies reward to all the parent domains of the specified domain name if exist
     /// @param domainName - The name of domain to be processed
-    function tryRewardAllParentDomains(
+    function _tryRewardAllParentDomains(
         string memory domainName,
-        RegistryStorage storage registryStorage
+        RewardRegistry.Info storage rewardInfo
     ) private {
         strings.slice memory domainNameSlice = domainName.toSlice();
         strings.slice memory delimiter = ".".toSlice();
@@ -375,22 +381,36 @@ contract DomainRegistryV2 is OwnableUpgradeable {
                 revert ParentDomainNameWasNotFound(parentDomainName);
 
             // apply reward for parent domain
-            uint256 appliedReward = registryStorage.rewardInfo.applyFor(parentDomainName);
-
-            address domainHolderAddress = registryStorage.domainsMap[parentDomainName];
-
-            // fire event
-            emit RewardApplied({
-                indexedDomainName: parentDomainName,
-                indexedDomainHolder: domainHolderAddress,
-                domainName: parentDomainName,
-                domainHolder: domainHolderAddress,
-                rewardValue: appliedReward,
-                rewardBalance: registryStorage.rewardInfo.getDomainRewardBalance(
-                    parentDomainName
-                )
-            });
+            rewardInfo.applyFor(parentDomainName);
         }
+    }
+
+    /// @notice Updates reward in eth for ethRewardInfo.
+    /// @dev Should be called right before use the ethRewardInfo.rewardValue
+    function _updateHolderRewardEth() private {
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        uint256 rewardEth = usd2Eth(registryStorage.usdRewardInfo.rewardValue);
+        registryStorage.ethRewardInfo.rewardValue = rewardEth;
+    }
+
+    /// @notice Common function to register domain.
+    /// @param domainName - name of domain to be registered
+    /// @param rewardInfo - reward info to apply reward there
+    function _registerDomainInternal(string memory domainName, RewardRegistry.Info storage rewardInfo) private {
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        _tryRewardAllParentDomains(domainName, rewardInfo);
+
+        // register new domain name
+        registryStorage.domainsMap[domainName] = payable(msg.sender);
+
+        // send event
+        emit DomainRegistered({
+            indexedName: domainName,
+            indexedDomainHolder: msg.sender,
+            name: domainName,
+            domainHolder: msg.sender,
+            createdDate: block.timestamp
+        });
     }
 
     /// @notice Sends 'amount' of ether to 'recipient'

@@ -7,7 +7,7 @@ library RewardRegistry {
     /// @title Describes all the information regarding domain rewards
     struct Info {
         /// @notice Parent domain holder's reward for sub domain registration
-        uint holderRegistrationReward;
+        uint rewardValue;
 
         /// @notice Describes the total rewards balance that all domain holders have together
         /// @dev using to calculate how much the owner can withdraw
@@ -31,9 +31,9 @@ library RewardRegistry {
         internal
         returns (uint256)
     {
-        rewardRegistry.domainBalances[domainName] += rewardRegistry.holderRegistrationReward;
-        rewardRegistry.totalRewardsBalance += rewardRegistry.holderRegistrationReward;
-        return rewardRegistry.holderRegistrationReward;
+        rewardRegistry.domainBalances[domainName] += rewardRegistry.rewardValue;
+        rewardRegistry.totalRewardsBalance += rewardRegistry.rewardValue;
+        return rewardRegistry.rewardValue;
     }
 
     /// @notice Resets reward for specified domain name
