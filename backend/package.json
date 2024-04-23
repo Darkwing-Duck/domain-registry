@@ -1,0 +1,20 @@
+{
+  "name": "lesson10",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start:server": "node server.js",
+    "nodemon:server": "nodemon -e js server.js"
+  },
+  "keywords": [],
+  "author": "Andriian Chestnykh",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "dependencies": {
+    "ethers": "^6.7.1"
+  }
+}
