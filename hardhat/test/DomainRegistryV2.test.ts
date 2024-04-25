@@ -3,6 +3,7 @@ import {ethers, upgrades} from "hardhat";
 import {expect} from "chai";
 import {TypedContractEvent, TypedEventLog} from "../typechain-types/common";
 import {DomainRegisteredEvent} from "../typechain-types/contracts/DomainRegistryV2";
+import {deployMock} from "../scripts/deployMock";
 
 describe("DomainRegistryV2", function () {
     async function domainRegistryV2Fixture() {
@@ -10,9 +11,8 @@ describe("DomainRegistryV2", function () {
         const [owner, otherAccount] = await ethers.getSigners();
         const DomainRegistryProto =
             await ethers.getContractFactory("DomainRegistryV2");
-
-        const priceFeed = await deployMockPriceFeed();
-        const token = await deployMockToken();
+        
+        const { priceFeed, token } = await deployMock();
         const priceFeedAddress = await priceFeed.getAddress();
         const tokenAddress = await token.getAddress();
         const holderRewardUsd = 1; // 1$
@@ -20,10 +20,10 @@ describe("DomainRegistryV2", function () {
         
         const domainRegistry = await upgrades.deployProxy(DomainRegistryProto, [
             owner.address,
-            registerPriceUsd,
-            priceFeedAddress,
-            tokenAddress
+            registerPriceUsd
         ]);
+
+        await domainRegistry.reinitialize(priceFeedAddress, tokenAddress);
 
         const registerPriceEth = await domainRegistry.usd2Eth(registerPriceUsd);
         const holderRewardEth = await domainRegistry.usd2Eth(holderRewardUsd);
@@ -41,19 +41,6 @@ describe("DomainRegistryV2", function () {
             registerPriceUsd,
             holderRewardEth
         };
-    }
-
-    async function deployMockToken() {
-        const mockUSDCTokenFactory = await ethers.getContractFactory("MockUSDCToken")
-        return mockUSDCTokenFactory.deploy();
-    }
-
-    async function deployMockPriceFeed() {
-        const DECIMALS = "8"
-        const INITIAL_PRICE = "308163834765"
-        const mockV3AggregatorFactory = await ethers.getContractFactory("MockV3Aggregator")
-
-        return mockV3AggregatorFactory.deploy(DECIMALS, INITIAL_PRICE);
     }
 
     function getReadableDate(timestamp: BigInt) {
@@ -141,7 +128,7 @@ describe("DomainRegistryV2", function () {
         // the domain com is unavailable to register
         expect(await domainRegistry.isDomainRegistered(subDomain)).to.be.true;
     });
-
+    
     it("Should reward holder of parent domain while registering new sub-domain", async () => {
         const rootDomain = "com";
         const subDomain1 = "business.com";

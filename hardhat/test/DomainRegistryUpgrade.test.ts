@@ -1,5 +1,6 @@
 import { ethers, upgrades } from "hardhat";
 import { expect } from "chai";
+import {deployMock} from "../scripts/deployMock";
 
 describe("DomainRegistry upgrade", function () {
   it("Upgrade", async function () {
@@ -62,14 +63,20 @@ describe("DomainRegistry upgrade", function () {
     );
 
     const DomainRegistryProtoV2 =
-      await ethers.getContractFactory("DomainRegistryV2");
+    await ethers.getContractFactory("DomainRegistryV2");
     const address = await domainRegistry.getAddress();
     const domainHolderReward = 1n;
+    
+    const { priceFeed, token } = await deployMock();
+    const priceFeedAddress = await priceFeed.getAddress();
+    const tokenAddress = await token.getAddress();
 
     domainRegistry = await upgrades.upgradeProxy(
       address,
-      DomainRegistryProtoV2,
-    );
+      DomainRegistryProtoV2, { call: {
+            fn: "reinitialize",
+            args: [priceFeedAddress, tokenAddress]
+      }});
 
     await domainRegistry.changeDomainHolderRewardUsd(domainHolderReward);
 

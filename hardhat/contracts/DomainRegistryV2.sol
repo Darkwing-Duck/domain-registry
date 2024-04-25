@@ -6,7 +6,6 @@ import {strings} from "solidity-stringutils/src/strings.sol";
 import {RewardRegistry} from "../libraries/RewardRegistry.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "hardhat/console.sol";
 
 /// @author Serhii Smirnov
 /// @title Describes a registry of all registered domain names linked to a domain holder,
@@ -120,19 +119,19 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         _;
     }
 
+    function reinitialize(address priceFeed_, address usdcContractAddress_) public reinitializer(2) {
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        registryStorage.priceFeed = AggregatorV3Interface(priceFeed_);
+        registryStorage.usdContractAddress = ERC20(usdcContractAddress_);
+    }
+
     /// @dev Used instead of constructor due to use upgradeable contract approach
     function initialize(
         address owner_,
-        uint256 registrationPriceUsd_,
-        address priceFeed_,
-        address usdcContractAddress_
+        uint256 registrationPrice_
     ) public initializer {
         __Ownable_init(owner_);
-        
-        RegistryStorage storage registryStorage = _getRegistryStorage();
-        registryStorage.registrationPrice = registrationPriceUsd_;
-        registryStorage.priceFeed = AggregatorV3Interface(priceFeed_);
-        registryStorage.usdContractAddress = ERC20(usdcContractAddress_);
+        _getRegistryStorage().registrationPrice = registrationPrice_;
     }
 
     /// @notice Converts usd value without decimals to eth value with 18 decimals
@@ -207,27 +206,36 @@ contract DomainRegistryV2 is OwnableUpgradeable {
 
     /// @notice Withdraws all the Eth balance to the owner's address
     function withdrawEth() external onlyOwner {
+        withdrawEthTo(payable(owner()));
+    }
+
+    /// @notice Withdraws all the Eth balance to specified address
+    function withdrawEthTo(address payable recipient) public onlyOwner {
         uint256 availableBalanceToWithdraw = address(this).balance -
-            _getRegistryStorage().ethRewardInfo.totalRewardsBalance;
+                                _getRegistryStorage().ethRewardInfo.totalRewardsBalance;
 
         if (availableBalanceToWithdraw == 0) revert NothingToWithdraw();
 
-        if (!payTo(payable(owner()), availableBalanceToWithdraw))
+        if (!payTo(recipient, availableBalanceToWithdraw))
             revert WithdrawFailed();
     }
 
     /// @notice Withdraws all the Usd balance to the owner's address
     function withdrawUsd() external onlyOwner {
+        withdrawUsdTo(owner());
+    }
+
+    /// @notice Withdraws all the Usd balance to specified address
+    function withdrawUsdTo(address recipient) public onlyOwner {
         RegistryStorage storage registryStorage = _getRegistryStorage();
         uint8 tokenDecimals = registryStorage.usdContractAddress.decimals();
         uint256 usdBalance = registryStorage.usdContractAddress.balanceOf(address(this));
         uint256 availableBalanceToWithdraw = usdBalance - registryStorage.usdRewardInfo.totalRewardsBalance * 10 ** tokenDecimals;
-        address owner = owner();
 
         if (availableBalanceToWithdraw == 0) revert NothingToWithdraw();
 
         registryStorage.usdContractAddress.approve(address(this), availableBalanceToWithdraw);
-        bool success = registryStorage.usdContractAddress.transferFrom(address(this), owner, availableBalanceToWithdraw);
+        bool success = registryStorage.usdContractAddress.transferFrom(address(this), recipient, availableBalanceToWithdraw);
 
         if (!success)
             revert WithdrawFailed();

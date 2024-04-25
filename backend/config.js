@@ -1,8 +1,8 @@
-import contractArtifact from "../hardhat/artifacts/contracts/MyToken.sol/MyToken.json" assert { type: "json" }
+import contractArtifact from "../hardhat/artifacts/contracts/DomainRegistryV2.sol/DomainRegistryV2.json" assert { type: "json" }
 
 const config = {
-  jsonRpcUrl: "http://127.0.0.1:8545",
-  contractAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  jsonRpcUrl: process.env.RPC || "http://127.0.0.1:8545",
+  contractAddress: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
   contractAbi: contractArtifact.abi,
   mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
 }

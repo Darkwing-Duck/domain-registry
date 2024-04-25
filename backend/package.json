@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start:server": "node server.js",
+    "start:server:local": "node server.js",
+    "start:server:sepolia": "RPC=https://sepolia.infura.io/v3/$(security find-generic-password -w -s 'infura-api-key') MNEMONIC=$(security find-generic-password -w -s 'mnemonic') node server.js",
     "nodemon:server": "nodemon -e js server.js"
   },
   "keywords": [],
