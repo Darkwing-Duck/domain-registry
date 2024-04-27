@@ -94,6 +94,18 @@ describe("DomainRegistryV2", function () {
         ).to.be.rejectedWith('ParentDomainNameWasNotFound("com")');
     });
 
+    it("Should register 3 levels of domain ", async () => {
+        const firstLevel = "com";
+        const secondLevel = "business.com";
+        const thirdLevel = "xxx.business.com";
+        const {domainRegistry, registerPriceEth} = await loadFixture(domainRegistryV2Fixture);
+        const options = {value: registerPriceEth};
+
+        await domainRegistry.registerDomain(firstLevel, options)
+        await domainRegistry.registerDomain(secondLevel, options)
+        await domainRegistry.registerDomain(thirdLevel, options)
+    });
+
     it("Should register domain and the domain became unavailable", async () => {
         const domainName = "com";
         const {domainRegistry, registerPriceEth} = await loadFixture(domainRegistryV2Fixture);
@@ -206,7 +218,7 @@ describe("DomainRegistryV2", function () {
         await expect(withdrawTx).to.changeEtherBalance(owner, withdrawValue);
     });
 
-    it("Should withdraw reward balance for a domain holder, only by owner", async () => {
+    it("Should withdraw reward balance for a domain holder, only by domain holder", async () => {
         const {domainRegistry, otherAccount, registerPriceEth} = await loadFixture(
             domainRegistryV2Fixture,
         );
@@ -227,7 +239,7 @@ describe("DomainRegistryV2", function () {
             (domainRegistry.connect(otherAccount) as any).withdrawEthRewardFor(
                 topDomain,
             ),
-        ).to.be.rejectedWith("OwnableUnauthorizedAccount");
+        ).to.be.rejectedWith("YouAreNotDomainHolder");
 
         const totalRewardBalanceEth = await domainRegistry.getTotalRewardBalanceEth();
         const topDomainHolderAddress =
@@ -511,6 +523,65 @@ describe("DomainRegistryV2", function () {
             token,
             owner.address,
             usdRewardValue,
+        );
+    });
+
+    it("Should withdraw usd reward and then eth reward", async () => {
+        const {domainRegistry, token, owner, holderRewardEth, registerPriceEth} = await loadFixture(domainRegistryV2Fixture);
+        const registryAddress = await domainRegistry.getAddress();
+        const tokenDecimals = await token.decimals();
+        const usdPrice = await domainRegistry.registrationPriceUsd() * 10n ** tokenDecimals;
+        const usdRewardValue = await domainRegistry.domainHolderRewardUsd();
+        const usdRewardWithDecimals = usdRewardValue * 10n ** tokenDecimals;
+        const comDomain = "com";
+        const ethComDomain = "eth.com";
+        const usdComDomain = "usd.com";
+        const options = {value: registerPriceEth};
+
+        // register 'com' domain with ethers
+        await domainRegistry.registerDomain(comDomain, options);
+        // register 'eth.com' domain with ethers
+        await domainRegistry.registerDomain(ethComDomain, options);
+
+        // register 'usd.com' domain with usd
+        await token.approve(registryAddress, usdPrice);
+        await domainRegistry.registerDomainWithUsd(usdComDomain);
+
+        let ethRewardBalance = await domainRegistry.getDomainRewardBalanceEth(comDomain);
+        let usdRewardBalance = await domainRegistry.getDomainRewardBalanceUsd(comDomain);
+
+        expect(ethRewardBalance).to.be.equal(holderRewardEth);
+        expect(usdRewardBalance).to.be.equal(usdRewardValue);
+
+        // withdraw usd reward
+        const withdrawTx = await domainRegistry.withdrawUsdRewardFor(comDomain);
+        await withdrawTx.wait();
+
+        ethRewardBalance = await domainRegistry.getDomainRewardBalanceEth(comDomain);
+        usdRewardBalance = await domainRegistry.getDomainRewardBalanceUsd(comDomain);
+        
+        await expect(withdrawTx).to.changeTokenBalance(
+            token,
+            owner.address,
+            usdRewardWithDecimals,
+        );
+
+        expect(ethRewardBalance).to.be.equal(holderRewardEth);
+        expect(usdRewardBalance).to.be.equal(0);
+
+        // withdraw eth reward
+        const withdrawEthTx = await domainRegistry.withdrawEthRewardFor(comDomain);
+        await withdrawEthTx.wait();
+
+        ethRewardBalance = await domainRegistry.getDomainRewardBalanceEth(comDomain);
+        usdRewardBalance = await domainRegistry.getDomainRewardBalanceUsd(comDomain);
+
+        expect(ethRewardBalance).to.be.equal(0);
+        expect(usdRewardBalance).to.be.equal(0);
+
+        await expect(withdrawEthTx).to.changeEtherBalance(
+            owner,
+            holderRewardEth,
         );
     });
 });

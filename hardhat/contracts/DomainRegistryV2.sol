@@ -107,6 +107,10 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @notice Indicates that nothing to withdraw
     error NothingToWithdraw();
 
+    /// @notice Indicates that the sender is not holder of the domain name
+    error YouAreNotDomainHolder();
+    
+
     /// @notice Guarantees that only available domains can be passed to a method with the modifier
     modifier availableDomain(string memory domain) {
         if (isDomainRegistered(domain)) revert DomainIsAlreadyRegistered();
@@ -116,6 +120,13 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @notice Guarantees that only registered domains can be passed to a method with the modifier
     modifier onlyRegisteredDomain(string memory domain) {
         if (!isDomainRegistered(domain)) revert DomainWasNotRegistered();
+        _;
+    }
+
+    /// @notice Guarantees that only holder of the domain can claim reward
+    modifier onlyDomainHolder(string memory domain) {
+        address holder = _getRegistryStorage().domainsMap[domain];
+        if (msg.sender != holder) revert YouAreNotDomainHolder();
         _;
     }
 
@@ -209,42 +220,15 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         withdrawEthTo(payable(owner()));
     }
 
-    /// @notice Withdraws all the Eth balance to specified address
-    function withdrawEthTo(address payable recipient) public onlyOwner {
-        uint256 availableBalanceToWithdraw = address(this).balance -
-                                _getRegistryStorage().ethRewardInfo.totalRewardsBalance;
-
-        if (availableBalanceToWithdraw == 0) revert NothingToWithdraw();
-
-        if (!payTo(recipient, availableBalanceToWithdraw))
-            revert WithdrawFailed();
-    }
-
     /// @notice Withdraws all the Usd balance to the owner's address
     function withdrawUsd() external onlyOwner {
         withdrawUsdTo(owner());
     }
 
-    /// @notice Withdraws all the Usd balance to specified address
-    function withdrawUsdTo(address recipient) public onlyOwner {
-        RegistryStorage storage registryStorage = _getRegistryStorage();
-        uint8 tokenDecimals = registryStorage.usdContractAddress.decimals();
-        uint256 usdBalance = registryStorage.usdContractAddress.balanceOf(address(this));
-        uint256 availableBalanceToWithdraw = usdBalance - registryStorage.usdRewardInfo.totalRewardsBalance * 10 ** tokenDecimals;
-
-        if (availableBalanceToWithdraw == 0) revert NothingToWithdraw();
-
-        registryStorage.usdContractAddress.approve(address(this), availableBalanceToWithdraw);
-        bool success = registryStorage.usdContractAddress.transferFrom(address(this), recipient, availableBalanceToWithdraw);
-
-        if (!success)
-            revert WithdrawFailed();
-    }
-
     /// @notice Withdraws Eth reward for specified domain name
     function withdrawEthRewardFor(
         string memory domainName
-    ) external onlyOwner onlyRegisteredDomain(domainName) {
+    ) external onlyDomainHolder(domainName) onlyRegisteredDomain(domainName) {
         RegistryStorage storage registryStorage = _getRegistryStorage();
         address payable domainHolder = registryStorage.domainsMap[domainName];
         uint256 rewardBalance = registryStorage.ethRewardInfo.getDomainRewardBalance(domainName);
@@ -270,7 +254,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @notice Withdraws Usd reward for specified domain name
     function withdrawUsdRewardFor(
         string memory domainName
-    ) external onlyOwner onlyRegisteredDomain(domainName) {
+    ) external onlyDomainHolder(domainName) onlyRegisteredDomain(domainName) {
         RegistryStorage storage registryStorage = _getRegistryStorage();
         address domainHolder = registryStorage.domainsMap[domainName];
         uint8 tokenDecimals = registryStorage.usdContractAddress.decimals();
@@ -279,7 +263,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         if (rewardBalance == 0) revert NothingToWithdraw();
 
         // reset domain reward balance
-        registryStorage.ethRewardInfo.resetFor(domainName);
+        registryStorage.usdRewardInfo.resetFor(domainName);
 
         // fire event
         emit RewardUsdWithdrawed({
@@ -315,6 +299,11 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         return _getRegistryStorage().usdRewardInfo.rewardValue;
     }
 
+    /// @notice Returns usd token address
+    function usdTokenAddress() external view returns (address) {
+        return address(_getRegistryStorage().usdContractAddress);
+    }
+
     /// @notice Returns Usd reward balance of domain's holder
     function getDomainRewardBalanceUsd(
         string memory domainName
@@ -337,6 +326,33 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     /// @notice Returns total Eth reward balance of all domain names
     function getTotalRewardBalanceEth() external view returns (uint256) {
         return _getRegistryStorage().ethRewardInfo.totalRewardsBalance;
+    }
+
+    /// @notice Withdraws all the Eth balance to specified address
+    function withdrawEthTo(address payable recipient) public onlyOwner {
+        uint256 availableBalanceToWithdraw = address(this).balance -
+                                _getRegistryStorage().ethRewardInfo.totalRewardsBalance;
+
+        if (availableBalanceToWithdraw == 0) revert NothingToWithdraw();
+
+        if (!payTo(recipient, availableBalanceToWithdraw))
+            revert WithdrawFailed();
+    }
+
+    /// @notice Withdraws all the Usd balance to specified address
+    function withdrawUsdTo(address recipient) public onlyOwner {
+        RegistryStorage storage registryStorage = _getRegistryStorage();
+        uint8 tokenDecimals = registryStorage.usdContractAddress.decimals();
+        uint256 usdBalance = registryStorage.usdContractAddress.balanceOf(address(this));
+        uint256 availableBalanceToWithdraw = usdBalance - registryStorage.usdRewardInfo.totalRewardsBalance * 10 ** tokenDecimals;
+
+        if (availableBalanceToWithdraw == 0) revert NothingToWithdraw();
+
+        registryStorage.usdContractAddress.approve(address(this), availableBalanceToWithdraw);
+        bool success = registryStorage.usdContractAddress.transferFrom(address(this), recipient, availableBalanceToWithdraw);
+
+        if (!success)
+            revert WithdrawFailed();
     }
 
     /// @notice Checks if domain has been already registered
@@ -383,13 +399,15 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         string memory parentDomainName = "";
 
         for (uint256 i = 0; i < numParentDomains; i++) {
-            parentDomainName = domainNameSlice.rsplit(delimiter).toString();
+            parentDomainName = string(abi.encodePacked(domainNameSlice.rsplit(delimiter).toString(), parentDomainName));
 
             if (!isDomainRegistered(parentDomainName))
                 revert ParentDomainNameWasNotFound(parentDomainName);
 
             // apply reward for parent domain
             rewardInfo.applyFor(parentDomainName);
+
+            parentDomainName = string(abi.encodePacked(".", parentDomainName));
         }
     }
 

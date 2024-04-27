@@ -11,17 +11,6 @@ const wallet = ethers.Wallet.fromPhrase(mnemonic).connect(provider);
 
 const contract = new ethers.Contract(contractAddress, abi, wallet);
 
-async function mint(to, amount) {
-  try {
-    const tx = await contract.mint(to, amount, /*{ gasLimit: 100 }*/);
-    await tx.wait();
-    console.log(`Minted ${amount} tokens. Tx hash: ${tx.hash}`);
-  } catch (error) {
-    console.error('Error minting:', error.message);
-    throw error;
-  }
-}
-
 async function withdrawEth(to) {
   try {
 
