@@ -17,6 +17,9 @@
     "webpack-dev-server": "^4.15.1"
   },
   "dependencies": {
-    "ethers": "^6.7.1"
+    "bootstrap": "^4.4.1",
+    "bootstrap-table": "^1.14.2",
+    "ethers": "^6.7.1",
+    "jquery": "^3.7.1"
   }
 }

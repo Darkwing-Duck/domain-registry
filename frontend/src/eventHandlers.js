@@ -1,6 +1,14 @@
 import * as domainRegistry from './domainRegistry.js'
-import {registrationPriceEth, registrationPriceUsd} from './domainRegistry.js'
+import {
+  getDomainRegisteredLogsFor,
+  registrationPriceEth,
+  registrationPriceUsd
+} from './domainRegistry.js'
 import {ethers} from "ethers";
+
+import 'jquery'
+import 'bootstrap'
+import 'bootstrap-table';
 
 export async function onClickConnect (button, currentAddr, usdPriceField, ethPriceField, claimEthRewardButton, claimUsdRewardButton) {
   try {
@@ -83,9 +91,39 @@ export async function onClickResolve(domainName, domainHolderAddressLabel) {
   domainHolderAddressLabel.innerText = await domainRegistry.findDomainHolderBy(domainName)
 }
 
-export async function onClickCheckReward(domainHolderAddress, holderEthRewardLabel, holderUsdRewardLabel) {
+export async function onClickFetchInfo(domainHolderAddress, holderEthRewardLabel, holderUsdRewardLabel) {
   const ethReward = await domainRegistry.getDomainHolderRewardBalanceEth(domainHolderAddress)
   const usdReward = await domainRegistry.getDomainHolderRewardBalanceUsd(domainHolderAddress)
   holderEthRewardLabel.innerText = formatWei(ethReward)
   holderUsdRewardLabel.innerText = usdReward
+
+  await fillInfoTable(domainHolderAddress)
+}
+
+async function fillInfoTable(domainHolderAddress) {
+  const logs = await getDomainRegisteredLogsFor(domainHolderAddress)
+  
+  const data = []
+  let index = 1;
+  
+  logs.map((log) => {
+    data.push({
+      'index': index,
+      'name': log.args.name,
+      'date': getReadableDate(log.args.createdDate),
+      'time': getReadableTime(log.args.createdDate)
+    })
+    
+    index++;
+  });
+  
+  $('#table').bootstrapTable('load', data);
+}
+
+function getReadableDate(timestamp) {
+  return new Date(Number(timestamp) * 1000).toLocaleDateString();
+}
+
+function getReadableTime(timestamp) {
+  return new Date(Number(timestamp) * 1000).toLocaleTimeString();
 }

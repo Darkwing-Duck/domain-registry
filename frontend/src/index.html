@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-    <script src="bundle.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.14.2/dist/bootstrap-table.min.css">
 </head>
 <body>
 <div class="container-fluid">
     <div class="row justify-content-center">
-        <div class="col-8">
+        <div class="mt-3 col-9">
             <button
                     class="btn btn-primary btn-lg btn-block mb-3"
                     id="connectButton"
@@ -20,87 +18,133 @@
                 Connect
             </button>
         </div>
-        <div class="input-group mb-3 col-8">
+        <div class="input-group mb-3 col-9">
             <div class="input-group-prepend">
                 <span class="input-group-text">Current Address:</span>
             </div>
             <span class="form-control" id="currentAddress" style="color:red; font-weight: bold">undefined</span>
         </div>
-        <div class="btn-group mb-3 col-8" role="group" aria-label="Basic example">
+        <div class="btn-group mb-3 col-9" role="group" aria-label="Basic example">
             <button id="claimEthRewardButton" type="button" class="btn btn-primary" disabled>Claim Reward (0 Eth)</button>
             <button id="claimUsdRewardButton" type="button" class="btn btn-primary" disabled>Claim Reward (0 Usd)</button>
         </div>
-        <div class="input-group mb-3 col-8" style="height: 10px"></div>
-        <div class="input-group mb-3 col-8">
-            <div class="input-group-prepend">
-                <span class="input-group-text" id="ethPriceField">eth</span>
-            </div>
-            <input type="text" class="form-control" id="ethDomainNameInput" placeholder="Enter domain name to register..." aria-label="Domain Name">
-            <div class="input-group-append">
-                <button
-                        class="btn btn-primary"
-                        id="ethRegisterButton"
-                        disabled>
-                    Register
-                </button>
-            </div>
-        </div>
-        <div class="input-group mb-3 col-8">
-            <div class="input-group-prepend">
-                <span class="input-group-text" id="usdPriceField">usd</span>
-            </div>
-            <input type="text" class="form-control" id="usdDomainNameInput" placeholder="Enter domain name to register..." aria-label="Domain Name">
-            <div class="input-group-append">
-                <button
-                        class="btn btn-primary"
-                        id="usdRegisterButton"
-                        disabled>
-                    Register
-                </button>
-            </div>
-        </div>
-        <div class="input-group mb-3 col-8" style="height: 10px"></div>
-        <div class="input-group mb-3 col-8">
-            <input type="text" class="form-control" id="resolveDomainNameInput" placeholder="Enter domain name to get holder address..." aria-label="Domain Name">
-            <div class="input-group-append">
-                <button
-                        class="btn btn-primary"
-                        id="resolveButton"
-                        disabled>
-                    Resolve
-                </button>
+        
+        <div class="input-group mb-3 col-9" style="height: 10px"></div>
+        
+        <div class="input-group mb-3 col-9">
+            <div class="card text-bg-info" style="width: 100%">
+                <div class="card-header">Registration</div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="ethPriceField">eth</span>
+                        </div>
+                        <input type="text" class="form-control" id="ethDomainNameInput" placeholder="Enter domain name to register..." aria-label="Domain Name">
+                        <div class="input-group-append">
+                            <button
+                                    class="btn btn-primary"
+                                    id="ethRegisterButton"
+                                    disabled>
+                                Register
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="usdPriceField">usd</span>
+                        </div>
+                        <input type="text" class="form-control" id="usdDomainNameInput" placeholder="Enter domain name to register..." aria-label="Domain Name">
+                        <div class="input-group-append">
+                            <button
+                                    class="btn btn-primary"
+                                    id="usdRegisterButton"
+                                    disabled>
+                                Register
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="input-group mb-3 col-8">
-            <div class="input-group-prepend">
-                <span class="input-group-text">Domain Holder:</span>
+        
+        <div class="input-group mb-3 col-9" style="height: 10px"></div>
+
+        <div class="input-group mb-3 col-9">
+            <div class="card text-bg-info" style="width: 100%">
+                <div class="card-header">Resolve Domain Name</div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="resolveDomainNameInput" placeholder="Enter domain name to get holder address..." aria-label="Domain Name">
+                        <div class="input-group-append">
+                            <button
+                                    class="btn btn-primary"
+                                    id="resolveButton">
+                                Resolve
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">Domain Holder:</span>
+                        </div>
+                        <span class="form-control" id="domainHolderAddressLabel" style="color:red; font-weight: bold">undefined</span>
+                    </div>
+                </div>
             </div>
-            <span class="form-control" id="domainHolderAddressLabel" style="color:red; font-weight: bold">undefined</span>
         </div>
-        <div class="input-group mb-3 col-8" style="height: 10px"></div>
-        <div class="input-group mb-3 col-8">
-            <input type="text" class="form-control" id="rewardDomainHolderAddressInput" placeholder="Enter domain holder address to check reward..." aria-label="Domain Holder">
-            <div class="input-group-append">
-                <button
-                        class="btn btn-primary"
-                        id="checkRewardButton"
-                        disabled>
-                    Check Reward
-                </button>
+        
+        <div class="input-group mb-3 col-9" style="height: 10px"></div>
+
+        <div class="input-group mb-3 col-9">
+            <div class="card text-bg-info" style="width: 100%">
+                <div class="card-header">Information</div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="rewardDomainHolderAddressInput" placeholder="Enter domain holder address to fetch info..." aria-label="Fetch Info">
+                        <div class="input-group-append">
+                            <button
+                                    class="btn btn-primary"
+                                    id="fetchInfoButton">
+                                Fetch Info
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">Eth Reward:</span>
+                        </div>
+                        <span class="form-control" id="holderEthRewardLabel" style="color:red; font-weight: bold">0</span>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">Usd Reward:</span>
+                        </div>
+                        <span class="form-control" id="holderUsdRewardLabel" style="color:red; font-weight: bold">0</span>
+                    </div>
+
+                    <div class="input-group">
+                        <table id="table" class="table table-striped" style="table-layout: fixed">
+                            <thead class="thead-dark">
+                            <tr>
+                                <th data-field="index" scope="col">#</th>
+                                <th data-field="name" scope="col">Name</th>
+                                <th data-field="date" scope="col">Date</th>
+                                <th data-field="time" scope="col">Time</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="input-group mb-3 col-8">
-            <div class="input-group-prepend">
-                <span class="input-group-text">Eth Reward:</span>
-            </div>
-            <span class="form-control" id="holderEthRewardLabel" style="color:red; font-weight: bold">0</span>
-        </div>
-        <div class="input-group mb-3 col-8">
-            <div class="input-group-prepend">
-                <span class="input-group-text">Usd Reward:</span>
-            </div>
-            <span class="form-control" id="holderUsdRewardLabel" style="color:red; font-weight: bold">0</span>
-        </div>
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+        <script src="https://unpkg.com/bootstrap-table@1.14.2/dist/bootstrap-table.min.js"></script>
+        <script src="bundle.js"></script>
     </div>
 </div>
 </body>

@@ -1,8 +1,7 @@
 import {
-  onClickCheckReward,
   onClickClaimRewardEth,
   onClickClaimRewardUsd,
-  onClickConnect,
+  onClickConnect, onClickFetchInfo,
   onClickRegisterEth,
   onClickRegisterUsd,
   onClickResolve
@@ -29,7 +28,7 @@ function assignEventHandlers() {
     elems.usdRegisterButton.disabled = false
     elems.ethRegisterButton.disabled = false
     elems.resolveButton.disabled = false
-    elems.checkRewardButton.disabled = false
+    // elems.checkRewardButton.disabled = false
   }
 
   elems.ethRegisterButton.onclick = async () => {
@@ -64,18 +63,13 @@ function assignEventHandlers() {
     elems.resolveDomainNameInput.disabled = false
   }
 
-  elems.checkRewardButton.onclick = async () => {
-    elems.checkRewardButton.disabled = true
+  elems.fetchInfoButton.onclick = async () => {
+    elems.fetchInfoButton.disabled = true
     elems.rewardDomainHolderAddressInput.disabled = true
-    await onClickCheckReward(elems.rewardDomainHolderAddressInput.value, elems.holderEthRewardLabel, elems.holderUsdRewardLabel)
-    elems.checkRewardButton.disabled = false
+    await onClickFetchInfo(elems.rewardDomainHolderAddressInput.value, elems.holderEthRewardLabel, elems.holderUsdRewardLabel)
+    elems.fetchInfoButton.disabled = false
     elems.rewardDomainHolderAddressInput.disabled = false
   }
-}
-
-const enableButtonsGroup2 = () => {
-  elems.balanceOfButton.disabled = false
-  elems.transferButton.disabled = false
 }
 
 const initialize = () => {
@@ -86,6 +80,8 @@ const initialize = () => {
 
   elems = init()
   assignEventHandlers()
+
+  $('#table').bootstrapTable();
 
   elems.connectButton.disabled = false
 }

@@ -14,8 +14,8 @@ export function init() {
     resolveButton: document.getElementById('resolveButton'),
     domainHolderAddressLabel: document.getElementById('domainHolderAddressLabel'),
     rewardDomainHolderAddressInput: document.getElementById('rewardDomainHolderAddressInput'),
-    checkRewardButton: document.getElementById('checkRewardButton'),
+    fetchInfoButton: document.getElementById('fetchInfoButton'),
     holderEthRewardLabel: document.getElementById('holderEthRewardLabel'),
-    holderUsdRewardLabel: document.getElementById('holderUsdRewardLabel'),
+    holderUsdRewardLabel: document.getElementById('holderUsdRewardLabel')
   }
 }

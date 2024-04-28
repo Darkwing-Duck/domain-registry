@@ -24,7 +24,7 @@ export const initializeUsdTokenContract = async () => {
 }
 
 export const registrationPriceUsd = async () => {
-  return await contract.registrationPriceUsd()
+  return await contract.registrationPriceUsd({gasLimit: 200000})
 }
 
 export const registrationPriceEth = async () => {
@@ -119,5 +119,15 @@ export const getDomainHolderRewardBalanceUsd = async (domainHolder) => {
   const balance = await contract.getDomainHolderRewardBalanceUsd(domainHolder)
   console.log(`Domain holder's address has '${balance}' usd of reward`)
   return balance;
+}
+
+export const getDomainRegisteredLogsFor = async (domainHolderAddress) => {
+  let filter = contract.filters.DomainRegistered(null, domainHolderAddress);
+  let logs = await contract.queryFilter(filter);
+  return sortLogsByDate(logs)
+}
+
+function sortLogsByDate(logs) {
+  return logs.sort((a, b) => Number(b.args.createdDate - a.args.createdDate));
 }
 
