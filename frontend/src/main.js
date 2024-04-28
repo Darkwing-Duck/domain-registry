@@ -1,11 +1,13 @@
 import {
+  onClickCheckReward,
   onClickClaimRewardEth,
   onClickClaimRewardUsd,
   onClickConnect,
   onClickRegisterEth,
-  onClickRegisterUsd, onClickResolve
+  onClickRegisterUsd,
+  onClickResolve
 } from './eventHandlers.js'
-import { init } from './htmlElements.js'
+import {init} from './htmlElements.js'
 
 let elems;
 
@@ -16,13 +18,18 @@ const isMetaMaskInstalled = () => {
 
 function assignEventHandlers() {
   elems.connectButton.onclick = async () => {
-    await onClickConnect(elems.connectButton, elems.currentAddress, elems.usdPriceField)
+    await onClickConnect(
+        elems.connectButton, 
+        elems.currentAddress,
+        elems.usdPriceField,
+        elems.ethPriceField,
+        elems.claimEthRewardButton,
+        elems.claimUsdRewardButton)
 
     elems.usdRegisterButton.disabled = false
     elems.ethRegisterButton.disabled = false
-    elems.usdClaimRewardButton.disabled = false
-    elems.ethClaimRewardButton.disabled = false
     elems.resolveButton.disabled = false
+    elems.checkRewardButton.disabled = false
   }
 
   elems.ethRegisterButton.onclick = async () => {
@@ -41,20 +48,12 @@ function assignEventHandlers() {
     elems.usdDomainNameInput.disabled = false
   }
 
-  elems.ethClaimRewardButton.onclick = async () => {
-    elems.ethClaimRewardButton.disabled = true
-    elems.ethRewardDomainNameInput.disabled = true
-    await onClickClaimRewardEth(elems.ethRewardDomainNameInput.value)
-    elems.ethClaimRewardButton.disabled = false
-    elems.ethRewardDomainNameInput.disabled = false
+  elems.claimEthRewardButton.onclick = async () => {
+    await onClickClaimRewardEth(elems.claimEthRewardButton)
   }
 
-  elems.usdClaimRewardButton.onclick = async () => {
-    elems.usdClaimRewardButton.disabled = true
-    elems.usdRewardDomainNameInput.disabled = true
-    await onClickClaimRewardUsd(elems.usdRewardDomainNameInput.value)
-    elems.usdClaimRewardButton.disabled = false
-    elems.usdRewardDomainNameInput.disabled = false
+  elems.claimUsdRewardButton.onclick = async () => {
+    await onClickClaimRewardUsd(elems.claimUsdRewardButton)
   }
 
   elems.resolveButton.onclick = async () => {
@@ -64,17 +63,14 @@ function assignEventHandlers() {
     elems.resolveButton.disabled = false
     elems.resolveDomainNameInput.disabled = false
   }
-  
-  // elems.fetchTokenDataButton.onclick = async () => {
-  //   await onClickFetchTokenData(elems.tokenContractAddressInput.value, elems.totalSupply)
-  //   enableButtonsGroup2()
-  // }
-  // elems.balanceOfButton.onclick = async () => {
-  //   await onClickBalanceOfTokens(elems.balanceOf, elems.balanceOfInput.value)
-  // }
-  // elems.transferButton.onclick = async () => {
-  //   await onClickTransfer(elems.transferToInput.value, elems.transferAmountInput.value)
-  // }
+
+  elems.checkRewardButton.onclick = async () => {
+    elems.checkRewardButton.disabled = true
+    elems.rewardDomainHolderAddressInput.disabled = true
+    await onClickCheckReward(elems.rewardDomainHolderAddressInput.value, elems.holderEthRewardLabel, elems.holderUsdRewardLabel)
+    elems.checkRewardButton.disabled = false
+    elems.rewardDomainHolderAddressInput.disabled = false
+  }
 }
 
 const enableButtonsGroup2 = () => {

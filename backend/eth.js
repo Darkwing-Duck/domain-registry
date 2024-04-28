@@ -59,8 +59,7 @@ async function reward() {
   }
 }
 
-export { 
-  mint, 
+export {
   registrationPrice, 
   reward,
   withdrawEth,

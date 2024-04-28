@@ -1,7 +1,8 @@
 import * as domainRegistry from './domainRegistry.js'
 import {registrationPriceEth, registrationPriceUsd} from './domainRegistry.js'
+import {ethers} from "ethers";
 
-export async function onClickConnect (button, currentAddr, usdPriceField) {
+export async function onClickConnect (button, currentAddr, usdPriceField, ethPriceField, claimEthRewardButton, claimUsdRewardButton) {
   try {
     const accounts = await ethereum.request({
       method: 'eth_requestAccounts',
@@ -18,10 +19,26 @@ export async function onClickConnect (button, currentAddr, usdPriceField) {
     ethPriceField.innerHTML = `${ethPrice} eth`;
 
     await domainRegistry.initializeUsdTokenContract()
+
+    // init reward
+    const rewardEth = await domainRegistry.getDomainHolderRewardBalanceEth(accounts[0])
+    const rewardUsd = await domainRegistry.getDomainHolderRewardBalanceUsd(accounts[0])
+    
+    const readableEthReward = formatWei(rewardEth)
+
+    claimEthRewardButton.innerText = `Claim Reward (${readableEthReward} Eth)`;
+    claimUsdRewardButton.innerText = `Claim Reward (${rewardUsd} Usd)`;
+
+    claimEthRewardButton.disabled = rewardEth <= 0n
+    claimUsdRewardButton.disabled = rewardUsd <= 0n
     
   } catch (error) {
     console.error(error)
   }
+}
+
+function formatWei(weiValue) {
+  return Number(ethers.formatEther(weiValue)).toFixed(5)
 }
 
 export async function onClickRegisterEth(domainName) {
@@ -40,19 +57,25 @@ export async function onClickRegisterUsd(domainName) {
   }
 }
 
-export async function onClickClaimRewardEth(domainName) {
+export async function onClickClaimRewardEth(claimEthRewardButton) {
   try {
-    await domainRegistry.claimEthRewardFor(domainName)
+    claimEthRewardButton.disabled = true
+    await domainRegistry.claimEthReward()
+    claimEthRewardButton.innerText = `Claim Reward (0 Eth)`;
   } catch (error) {
     console.error(error)
+    claimEthRewardButton.disabled = false
   }
 }
 
-export async function onClickClaimRewardUsd(domainName) {
+export async function onClickClaimRewardUsd(claimUsdRewardButton) {
   try {
-    await domainRegistry.claimUsdRewardFor(domainName)
+    claimUsdRewardButton.disabled = true
+    await domainRegistry.claimUsdReward()
+    claimUsdRewardButton.innerText = `Claim Reward (0 Usd)`;
   } catch (error) {
     console.error(error)
+    claimUsdRewardButton.disabled = false
   }
 }
 
@@ -60,18 +83,9 @@ export async function onClickResolve(domainName, domainHolderAddressLabel) {
   domainHolderAddressLabel.innerText = await domainRegistry.findDomainHolderBy(domainName)
 }
 
-// export async function onClickFetchTokenData (tokenContractAddress, totalSupply) {
-//   if (!tokenContractAddress) {
-//     return
-//   }
-//   tokenContract.bind(tokenContractAddress)
-//   totalSupply.innerHTML = await tokenContract.totalSupply()
-// }
-
-// export async function onClickBalanceOfTokens (balanceOfElem, address) {
-//   balanceOfElem.innerHTML = `Balance of ${address} is ${await tokenContract.balanceOf(address)}`
-// }
-//
-// export async function onClickTransfer (to, amount) {
-//   await tokenContract.transfer(to, amount)
-// }
+export async function onClickCheckReward(domainHolderAddress, holderEthRewardLabel, holderUsdRewardLabel) {
+  const ethReward = await domainRegistry.getDomainHolderRewardBalanceEth(domainHolderAddress)
+  const usdReward = await domainRegistry.getDomainHolderRewardBalanceUsd(domainHolderAddress)
+  holderEthRewardLabel.innerText = formatWei(ethReward)
+  holderUsdRewardLabel.innerText = usdReward
+}

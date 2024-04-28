@@ -20,75 +20,46 @@
                 Connect
             </button>
         </div>
-        <div class="mb-3 col-8">
-            <p>
-                Current Address: <span id="currentAddress" style="color:red; font-weight: bold">undefined</span><br/><br/>
-            </p>
-        </div>
         <div class="input-group mb-3 col-8">
-            <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <span class="input-group-text" id="ethPriceField">eth</span>
-                </div>
-                <input type="text" class="form-control" id="ethDomainNameInput" placeholder="Enter domain name to register..." aria-label="Domain Name">
-                <div class="input-group-append">
-                    <button
-                            class="btn btn-primary"
-                            id="ethRegisterButton"
-                            disabled>
-                        Register
-                    </button>
-                </div>
+            <div class="input-group-prepend">
+                <span class="input-group-text">Current Address:</span>
+            </div>
+            <span class="form-control" id="currentAddress" style="color:red; font-weight: bold">undefined</span>
+        </div>
+        <div class="btn-group mb-3 col-8" role="group" aria-label="Basic example">
+            <button id="claimEthRewardButton" type="button" class="btn btn-primary" disabled>Claim Reward (0 Eth)</button>
+            <button id="claimUsdRewardButton" type="button" class="btn btn-primary" disabled>Claim Reward (0 Usd)</button>
+        </div>
+        <div class="input-group mb-3 col-8" style="height: 10px"></div>
+        <div class="input-group mb-3 col-8">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="ethPriceField">eth</span>
+            </div>
+            <input type="text" class="form-control" id="ethDomainNameInput" placeholder="Enter domain name to register..." aria-label="Domain Name">
+            <div class="input-group-append">
+                <button
+                        class="btn btn-primary"
+                        id="ethRegisterButton"
+                        disabled>
+                    Register
+                </button>
             </div>
         </div>
         <div class="input-group mb-3 col-8">
-            <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <span class="input-group-text" id="usdPriceField">usd</span>
-                </div>
-                <input type="text" class="form-control" id="usdDomainNameInput" placeholder="Enter domain name to register..." aria-label="Domain Name">
-                <div class="input-group-append">
-                    <button
-                            class="btn btn-primary"
-                            id="usdRegisterButton"
-                            disabled>
-                        Register
-                    </button>
-                </div>
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="usdPriceField">usd</span>
+            </div>
+            <input type="text" class="form-control" id="usdDomainNameInput" placeholder="Enter domain name to register..." aria-label="Domain Name">
+            <div class="input-group-append">
+                <button
+                        class="btn btn-primary"
+                        id="usdRegisterButton"
+                        disabled>
+                    Register
+                </button>
             </div>
         </div>
-        <div class="input-group mb-3 col-8">
-            <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <span class="input-group-text">eth</span>
-                </div>
-                <input type="text" class="form-control" id="ethRewardDomainNameInput" placeholder="Enter domain name to claim reward..." aria-label="Domain Name">
-                <div class="input-group-append">
-                    <button
-                            class="btn btn-primary"
-                            id="ethClaimRewardButton"
-                            disabled>
-                        Claim Reward
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div class="input-group mb-3 col-8">
-            <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <span class="input-group-text">usd</span>
-                </div>
-                <input type="text" class="form-control" id="usdRewardDomainNameInput" placeholder="Enter domain name to claim reward..." aria-label="Domain Name">
-                <div class="input-group-append">
-                    <button
-                            class="btn btn-primary"
-                            id="usdClaimRewardButton"
-                            disabled>
-                        Claim Reward
-                    </button>
-                </div>
-            </div>
-        </div>
+        <div class="input-group mb-3 col-8" style="height: 10px"></div>
         <div class="input-group mb-3 col-8">
             <input type="text" class="form-control" id="resolveDomainNameInput" placeholder="Enter domain name to get holder address..." aria-label="Domain Name">
             <div class="input-group-append">
@@ -100,49 +71,37 @@
                 </button>
             </div>
         </div>
-        <div class="mb-3 col-8">
-            <p>
-                Domain Holder: <span id="domainHolderAddressLabel" style="color:red; font-weight: bold">undefined</span><br/><br/>
-            </p>
+        <div class="input-group mb-3 col-8">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Domain Holder:</span>
+            </div>
+            <span class="form-control" id="domainHolderAddressLabel" style="color:red; font-weight: bold">undefined</span>
         </div>
-<!--        <div class="mb-3 col-8">-->
-<!--            <p>-->
-<!--                Total Tokens Supply: <span id="totalSupply" style="font-weight: bold">undefined</span><br/>-->
-<!--            </p>-->
-<!--        </div>-->
-<!--        <div class="input-group mb-3 col-8">-->
-<!--            <input type="text" class="form-control" id="balanceOfInput" placeholder="Address of a Token Owner" aria-label="Address of a Token Owner">-->
-<!--            <button-->
-<!--                class="btn btn-primary mb-3"-->
-<!--                    id="balanceOfButton"-->
-<!--                    disabled-->
-<!--            >-->
-<!--                Get Balance of Tokens-->
-<!--            </button>-->
-<!--        </div>-->
-<!--        <div class="mb-3 col-8">-->
-<!--            <p>-->
-<!--                <span id="balanceOf"></span><br/>-->
-<!--            </p>-->
-<!--        </div>-->
-<!--        <div class="input-group mb-3 col-8">-->
-<!--            <div class="input-group-prepend">-->
-<!--                <span class="input-group-text" id="basic-addon1">to</span>-->
-<!--            </div>-->
-<!--            <input type="text" class="form-control" id="transferToInput" placeholder="Destination address" aria-label="Destination address" aria-describedby="basic-addon2">-->
-<!--            <div class="input-group-prepend">-->
-<!--                <span class="input-group-text" id="basic-addon2">value</span>-->
-<!--            </div>-->
-<!--            <input type="text" class="form-control" id="transferAmountInput" placeholder="Value to transfer" aria-label="Value" aria-describedby="basic-addon2">-->
-<!--            <button-->
-<!--                    class="btn btn-primary"-->
-<!--                    id="transferButton"-->
-<!--                    disabled-->
-<!--            >-->
-<!--                Transfer-->
-<!--            </button>-->
-<!--        </div>-->
-<!--    </div>-->
+        <div class="input-group mb-3 col-8" style="height: 10px"></div>
+        <div class="input-group mb-3 col-8">
+            <input type="text" class="form-control" id="rewardDomainHolderAddressInput" placeholder="Enter domain holder address to check reward..." aria-label="Domain Holder">
+            <div class="input-group-append">
+                <button
+                        class="btn btn-primary"
+                        id="checkRewardButton"
+                        disabled>
+                    Check Reward
+                </button>
+            </div>
+        </div>
+        <div class="input-group mb-3 col-8">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Eth Reward:</span>
+            </div>
+            <span class="form-control" id="holderEthRewardLabel" style="color:red; font-weight: bold">0</span>
+        </div>
+        <div class="input-group mb-3 col-8">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Usd Reward:</span>
+            </div>
+            <span class="form-control" id="holderUsdRewardLabel" style="color:red; font-weight: bold">0</span>
+        </div>
+    </div>
 </div>
 </body>
 </html>

@@ -65,38 +65,38 @@ export const registerWithUsd = async (domainName) => {
   }
 }
 
-export const getEthRewardBalanceFor = async (domainName) => {
-  const balance = await contract.getDomainRewardBalanceEth(domainName)
-  console.log(`The eth reward balance for domain name '${domainName}' is ${balance} wei`)
+export const getEthRewardBalanceFor = async (domainHolder) => {
+  const balance = await contract.getDomainHolderRewardBalanceEth(domainHolder)
+  console.log(`The eth reward balance for domain name '${domainHolder}' is ${balance} wei`)
   return balance
 }
 
-export const getUsdRewardBalanceFor = async (domainName) => {
-  const balance = await contract.getDomainRewardBalanceUsd(domainName)
-  console.log(`The eth reward balance for domain name '${domainName}' is ${balance} usd`)
+export const getUsdRewardBalanceFor = async (domainHolder) => {
+  const balance = await contract.getDomainHolderRewardBalanceUsd(domainHolder)
+  console.log(`The eth reward balance for domain holder '${domainHolder}' is ${balance} usd`)
   return balance
 }
 
-export const claimEthRewardFor = async (domainName) => {
+export const claimEthReward = async () => {
   try {
     const signer = await provider.getSigner()
-    const availableReward = await getEthRewardBalanceFor(domainName)
-    const tx = await contract.connect(signer).withdrawEthRewardFor(domainName)
+    const availableReward = await getEthRewardBalanceFor(signer.address)
+    const tx = await contract.connect(signer).withdrawEthReward()
     await tx.wait()
-    console.log(`Reward gained by domain name ${domainName} was successfully claimed by holder ${signer.address} with ${availableReward} wei.`)
+    console.log(`Reward gained by domain holder ${signer.address} was successfully claimed with ${availableReward} wei.`)
     console.log(`Tx hash: ${tx.hash}`)
   } catch (error) {
     console.error('Error domain name registering:', error.message)
   }
 }
 
-export const claimUsdRewardFor = async (domainName) => {
+export const claimUsdReward = async () => {
   try {
     const signer = await provider.getSigner()
-    const availableReward = await getUsdRewardBalanceFor(domainName)
-    const tx = await contract.connect(signer).withdrawUsdRewardFor(domainName)
+    const availableReward = await getUsdRewardBalanceFor(signer.address)
+    const tx = await contract.connect(signer).withdrawUsdReward()
     await tx.wait()
-    console.log(`Reward gained by domain name ${domainName} was successfully claimed by holder ${signer.address} with ${availableReward} usd.`)
+    console.log(`Reward gained by domain holder ${signer.address} was successfully with ${availableReward} usd.`)
     console.log(`Tx hash: ${tx.hash}`)
   } catch (error) {
     console.error('Error domain name registering:', error.message)
@@ -108,3 +108,16 @@ export const findDomainHolderBy = async (domainName) => {
   console.log(`Domain holder's address for domain '${domainName}' is ${holderAddress}`)
   return holderAddress;
 }
+
+export const getDomainHolderRewardBalanceEth = async (domainHolder) => {
+  const balance = await contract.getDomainHolderRewardBalanceEth(domainHolder)
+  console.log(`Domain holder's address has '${balance}' eth of reward`)
+  return balance;
+}
+
+export const getDomainHolderRewardBalanceUsd = async (domainHolder) => {
+  const balance = await contract.getDomainHolderRewardBalanceUsd(domainHolder)
+  console.log(`Domain holder's address has '${balance}' usd of reward`)
+  return balance;
+}
+

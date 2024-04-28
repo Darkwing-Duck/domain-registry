@@ -58,30 +58,22 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         uint256 createdDate
     );
 
-    /// @notice Event that is notifying external world about applying ETH reward to a parent node
-    /// @param indexedDomainName - Indexed name of domain who withdraw the reward
+    /// @notice Event that is notifying external world about Eth reward withdrawal
     /// @param indexedDomainHolder - Indexed domain holder to simplify filtering events by the holder
-    /// @param domainName - The name of domain who withdraw the reward
     /// @param domainHolder - Domain holder of domain
     /// @param withdrawValue - Value that was withdrawed to the domain holder
     event RewardEthWithdrawed(
-        string indexed indexedDomainName,
         address indexed indexedDomainHolder,
-        string domainName,
         address domainHolder,
         uint256 withdrawValue
     );
 
-    /// @notice Event that is notifying external world about applying USD reward to a parent node
-    /// @param indexedDomainName - Indexed name of domain who withdraw the reward
+    /// @notice Event that is notifying external world about Usd reward withdrawal
     /// @param indexedDomainHolder - Indexed domain holder to simplify filtering events by the holder
-    /// @param domainName - The name of domain who withdraw the reward
     /// @param domainHolder - Domain holder of domain
     /// @param withdrawValue - Value that was withdrawed to the domain holder
     event RewardUsdWithdrawed(
-        string indexed indexedDomainName,
         address indexed indexedDomainHolder,
-        string domainName,
         address domainHolder,
         uint256 withdrawValue
     );
@@ -102,7 +94,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     error ParentDomainNameWasNotFound(string parentDomainName);
 
     /// @notice Indicates that withdraw reward was failed
-    error WithdrawRewardFailed(string domainName);
+    error WithdrawRewardFailed(address domainHolder);
 
     /// @notice Indicates that nothing to withdraw
     error NothingToWithdraw();
@@ -226,59 +218,49 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     }
 
     /// @notice Withdraws Eth reward for specified domain name
-    function withdrawEthRewardFor(
-        string memory domainName
-    ) external onlyDomainHolder(domainName) onlyRegisteredDomain(domainName) {
+    function withdrawEthReward() external {
         RegistryStorage storage registryStorage = _getRegistryStorage();
-        address payable domainHolder = registryStorage.domainsMap[domainName];
-        uint256 rewardBalance = registryStorage.ethRewardInfo.getDomainRewardBalance(domainName);
+        uint256 rewardBalance = registryStorage.ethRewardInfo.getDomainHolderRewardBalance(msg.sender);
 
         if (rewardBalance == 0) revert NothingToWithdraw();
 
-        // reset domain reward balance
-        registryStorage.ethRewardInfo.resetFor(domainName);
+        // reset domain holder reward balance
+        registryStorage.ethRewardInfo.resetFor(msg.sender);
 
         // fire event
         emit RewardEthWithdrawed({
-            indexedDomainName: domainName,
-            indexedDomainHolder: domainHolder,
-            domainName: domainName,
-            domainHolder: domainHolder,
+            indexedDomainHolder: msg.sender,
+            domainHolder: msg.sender,
             withdrawValue: rewardBalance
         });
 
-        if (!payTo(domainHolder, rewardBalance))
-            revert WithdrawRewardFailed(domainName);
+        if (!payTo(payable(msg.sender), rewardBalance))
+            revert WithdrawRewardFailed(msg.sender);
     }
 
     /// @notice Withdraws Usd reward for specified domain name
-    function withdrawUsdRewardFor(
-        string memory domainName
-    ) external onlyDomainHolder(domainName) onlyRegisteredDomain(domainName) {
+    function withdrawUsdReward() external {
         RegistryStorage storage registryStorage = _getRegistryStorage();
-        address domainHolder = registryStorage.domainsMap[domainName];
         uint8 tokenDecimals = registryStorage.usdContractAddress.decimals();
-        uint256 rewardBalance = registryStorage.usdRewardInfo.getDomainRewardBalance(domainName) * 10 ** tokenDecimals;
+        uint256 rewardBalance = registryStorage.usdRewardInfo.getDomainHolderRewardBalance(msg.sender) * 10 ** tokenDecimals;
 
         if (rewardBalance == 0) revert NothingToWithdraw();
 
         // reset domain reward balance
-        registryStorage.usdRewardInfo.resetFor(domainName);
+        registryStorage.usdRewardInfo.resetFor(msg.sender);
 
         // fire event
         emit RewardUsdWithdrawed({
-            indexedDomainName: domainName,
-            indexedDomainHolder: domainHolder,
-            domainName: domainName,
-            domainHolder: domainHolder,
+            indexedDomainHolder: msg.sender,
+            domainHolder: msg.sender,
             withdrawValue: rewardBalance
         });
 
         registryStorage.usdContractAddress.approve(address(this), rewardBalance);
-        bool success = registryStorage.usdContractAddress.transferFrom(address(this), domainHolder, rewardBalance);
+        bool success = registryStorage.usdContractAddress.transferFrom(address(this), msg.sender, rewardBalance);
 
         if (!success)
-            revert WithdrawRewardFailed(domainName);
+            revert WithdrawRewardFailed(msg.sender);
     }
 
     /// @notice Resolves domain entry by the name
@@ -305,17 +287,17 @@ contract DomainRegistryV2 is OwnableUpgradeable {
     }
 
     /// @notice Returns Usd reward balance of domain's holder
-    function getDomainRewardBalanceUsd(
-        string memory domainName
+    function getDomainHolderRewardBalanceUsd(
+        address domainHolder
     ) external view returns (uint256) {
-        return _getRegistryStorage().usdRewardInfo.getDomainRewardBalance(domainName);
+        return _getRegistryStorage().usdRewardInfo.getDomainHolderRewardBalance(domainHolder);
     }
 
     /// @notice Returns Eth reward balance of domain's holder
-    function getDomainRewardBalanceEth(
-        string memory domainName
+    function getDomainHolderRewardBalanceEth(
+        address domainHolder
     ) external view returns (uint256) {
-        return _getRegistryStorage().ethRewardInfo.getDomainRewardBalance(domainName);
+        return _getRegistryStorage().ethRewardInfo.getDomainHolderRewardBalance(domainHolder);
     }
 
     /// @notice Returns total Usd reward balance of all domain names
@@ -405,7 +387,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
                 revert ParentDomainNameWasNotFound(parentDomainName);
 
             // apply reward for parent domain
-            rewardInfo.applyFor(parentDomainName);
+            rewardInfo.applyFor(_getRegistryStorage().domainsMap[parentDomainName]);
 
             parentDomainName = string(abi.encodePacked(".", parentDomainName));
         }

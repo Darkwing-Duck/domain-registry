@@ -146,22 +146,22 @@ describe("DomainRegistryV2", function () {
         const subDomain1 = "business.com";
         const subDomain2 = "test.com";
 
-        const {domainRegistry, registerPriceEth} = await loadFixture(domainRegistryV2Fixture);
+        const {domainRegistry, registerPriceEth, owner} = await loadFixture(domainRegistryV2Fixture);
         const options = {value: registerPriceEth};
         const domainHolderReward = await domainRegistry.domainHolderRewardUsd();
         let targetRewardBalance = await domainRegistry.usd2Eth(domainHolderReward);
 
         await domainRegistry.registerDomain(rootDomain, options);
-
+        
         // on start reward balance is 0
-        expect(await domainRegistry.getDomainRewardBalanceEth(rootDomain)).to.be.equal(
+        expect(await domainRegistry.getDomainHolderRewardBalanceEth(owner.address)).to.be.equal(
             0,
         );
 
         await domainRegistry.registerDomain(subDomain1, options);
         
         // after first sub-domain registration reward balance is 'domainHolderReward' value
-        expect(await domainRegistry.getDomainRewardBalanceEth(rootDomain)).to.be.equal(
+        expect(await domainRegistry.getDomainHolderRewardBalanceEth(owner.address)).to.be.equal(
             targetRewardBalance,
         );
 
@@ -170,7 +170,7 @@ describe("DomainRegistryV2", function () {
         targetRewardBalance *= 2n;
 
         // after second sub-domain registration reward balance is 'domainHolderReward' * 2 value
-        expect(await domainRegistry.getDomainRewardBalanceEth(rootDomain)).to.be.equal(
+        expect(await domainRegistry.getDomainHolderRewardBalanceEth(owner.address)).to.be.equal(
             targetRewardBalance,
         );
     });
@@ -219,7 +219,7 @@ describe("DomainRegistryV2", function () {
     });
 
     it("Should withdraw reward balance for a domain holder, only by domain holder", async () => {
-        const {domainRegistry, otherAccount, registerPriceEth} = await loadFixture(
+        const {domainRegistry, owner, otherAccount, registerPriceEth} = await loadFixture(
             domainRegistryV2Fixture,
         );
         const options = {value: registerPriceEth};
@@ -231,21 +231,19 @@ describe("DomainRegistryV2", function () {
         await domainRegistry.registerDomain(topDomain, options);
         await domainRegistry.registerDomain(subDomain, options);
 
-        expect(await domainRegistry.getDomainRewardBalanceEth(topDomain)).to.be.equal(
+        expect(await domainRegistry.getDomainHolderRewardBalanceEth(owner.address)).to.be.equal(
             rewardAmountEth,
         );
 
         await expect(
-            (domainRegistry.connect(otherAccount) as any).withdrawEthRewardFor(
-                topDomain,
-            ),
-        ).to.be.rejectedWith("YouAreNotDomainHolder");
+            (domainRegistry.connect(otherAccount) as any).withdrawEthReward(),
+        ).to.be.rejectedWith("NothingToWithdraw");
 
         const totalRewardBalanceEth = await domainRegistry.getTotalRewardBalanceEth();
-        const topDomainHolderAddress =
-            await domainRegistry.findDomainHolderBy(topDomain);
+        const topDomainHolderAddress = await domainRegistry.findDomainHolderBy(topDomain);
         const targetContractBalance = registerPriceEth * 2n - rewardAmountEth;
-        const withdrawTx = await domainRegistry.withdrawEthRewardFor(topDomain);
+        const withdrawTx = await domainRegistry.withdrawEthReward();
+        await withdrawTx.wait();
 
         expect(await ethers.provider.getBalance(domainRegistry)).to.be.equal(
             targetContractBalance,
@@ -254,7 +252,7 @@ describe("DomainRegistryV2", function () {
         expect(await domainRegistry.getTotalRewardBalanceEth()).to.be.equal(
             totalRewardBalanceEth - rewardAmountEth,
         );
-        expect(await domainRegistry.getDomainRewardBalanceEth(topDomain)).to.be.equal(
+        expect(await domainRegistry.getDomainHolderRewardBalanceEth(topDomainHolderAddress)).to.be.equal(
             0,
         );
         await expect(withdrawTx).to.changeEtherBalance(
@@ -450,7 +448,7 @@ describe("DomainRegistryV2", function () {
         expect(await domainRegistry.isDomainRegistered(domainToRegister)).to.be.false;
         expect(await domainRegistry.isDomainRegistered(childDomainToRegister)).to.be.false;
         
-        expect(await domainRegistry.getDomainRewardBalanceUsd(domainToRegister)).to.be.equal(0);
+        expect(await domainRegistry.getDomainHolderRewardBalanceUsd(owner.address)).to.be.equal(0);
         expect(await domainRegistry.getTotalRewardBalanceUsd()).to.be.equal(0);
 
         await token.approve(registryAddress, usdPrice);
@@ -462,7 +460,7 @@ describe("DomainRegistryV2", function () {
         expect(await domainRegistry.isDomainRegistered(domainToRegister)).to.be.true;
         expect(await domainRegistry.isDomainRegistered(childDomainToRegister)).to.be.true;
 
-        expect(await domainRegistry.getDomainRewardBalanceUsd(domainToRegister)).to.be.equal(usdRewardValue);
+        expect(await domainRegistry.getDomainHolderRewardBalanceUsd(owner.address)).to.be.equal(usdRewardValue);
         expect(await domainRegistry.getTotalRewardBalanceUsd()).to.be.equal(usdRewardValue);
     });
 
@@ -511,10 +509,10 @@ describe("DomainRegistryV2", function () {
         await token.approve(registryAddress, usdPrice);
         await domainRegistry.registerDomainWithUsd(childDomainToRegister);
 
-        const registryBalance = await token.balanceOf(domainRegistry.getAddress());
+        const registryBalance = await token.balanceOf(registryAddress);
         const targetRegistryBalance = registryBalance - usdRewardValue;
 
-        const withdrawTx = await domainRegistry.withdrawUsdRewardFor(domainToRegister);
+        const withdrawTx = await domainRegistry.withdrawUsdReward();
         await withdrawTx.wait();
 
         expect(await token.balanceOf(domainRegistry.getAddress())).to.be.equal(targetRegistryBalance);
@@ -547,18 +545,18 @@ describe("DomainRegistryV2", function () {
         await token.approve(registryAddress, usdPrice);
         await domainRegistry.registerDomainWithUsd(usdComDomain);
 
-        let ethRewardBalance = await domainRegistry.getDomainRewardBalanceEth(comDomain);
-        let usdRewardBalance = await domainRegistry.getDomainRewardBalanceUsd(comDomain);
+        let ethRewardBalance = await domainRegistry.getDomainHolderRewardBalanceEth(owner.address);
+        let usdRewardBalance = await domainRegistry.getDomainHolderRewardBalanceUsd(owner.address);
 
         expect(ethRewardBalance).to.be.equal(holderRewardEth);
         expect(usdRewardBalance).to.be.equal(usdRewardValue);
 
         // withdraw usd reward
-        const withdrawTx = await domainRegistry.withdrawUsdRewardFor(comDomain);
+        const withdrawTx = await domainRegistry.withdrawUsdReward();
         await withdrawTx.wait();
 
-        ethRewardBalance = await domainRegistry.getDomainRewardBalanceEth(comDomain);
-        usdRewardBalance = await domainRegistry.getDomainRewardBalanceUsd(comDomain);
+        ethRewardBalance = await domainRegistry.getDomainHolderRewardBalanceEth(owner.address);
+        usdRewardBalance = await domainRegistry.getDomainHolderRewardBalanceUsd(owner.address);
         
         await expect(withdrawTx).to.changeTokenBalance(
             token,
@@ -570,11 +568,11 @@ describe("DomainRegistryV2", function () {
         expect(usdRewardBalance).to.be.equal(0);
 
         // withdraw eth reward
-        const withdrawEthTx = await domainRegistry.withdrawEthRewardFor(comDomain);
+        const withdrawEthTx = await domainRegistry.withdrawEthReward();
         await withdrawEthTx.wait();
 
-        ethRewardBalance = await domainRegistry.getDomainRewardBalanceEth(comDomain);
-        usdRewardBalance = await domainRegistry.getDomainRewardBalanceUsd(comDomain);
+        ethRewardBalance = await domainRegistry.getDomainHolderRewardBalanceEth(owner.address);
+        usdRewardBalance = await domainRegistry.getDomainHolderRewardBalanceUsd(owner.address);
 
         expect(ethRewardBalance).to.be.equal(0);
         expect(usdRewardBalance).to.be.equal(0);

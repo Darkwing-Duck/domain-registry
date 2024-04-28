@@ -12,35 +12,35 @@ library RewardRegistry {
         /// @notice Describes the total rewards balance that all domain holders have together
         /// @dev using to calculate how much the owner can withdraw
         uint totalRewardsBalance;
-
-        /// @notice Balances of each registered domain
-        mapping(string => uint256) domainBalances;
+        
+        /// @notice Balances of domain holders
+        mapping(address => uint256) holderBalances;
     }
 
     /// @notice Returns reward balance of domain's holder
-    function getDomainRewardBalance(Info storage rewardRegistry, string memory domainName) 
+    function getDomainHolderRewardBalance(Info storage rewardRegistry, address domainHolder) 
         internal 
         view 
         returns (uint256) 
     {
-        return rewardRegistry.domainBalances[domainName];
+        return rewardRegistry.holderBalances[domainHolder];
     }
 
     /// @notice Applies reward to specified domain name
-    function applyFor(Info storage rewardRegistry, string memory domainName)
+    function applyFor(Info storage rewardRegistry, address domainHolder)
         internal
         returns (uint256)
     {
-        rewardRegistry.domainBalances[domainName] += rewardRegistry.rewardValue;
+        rewardRegistry.holderBalances[domainHolder] += rewardRegistry.rewardValue;
         rewardRegistry.totalRewardsBalance += rewardRegistry.rewardValue;
         return rewardRegistry.rewardValue;
     }
 
     /// @notice Resets reward for specified domain name
-    function resetFor(Info storage rewardRegistry, string memory domainName)
+    function resetFor(Info storage rewardRegistry, address domainHolder)
         internal
     {
-        rewardRegistry.totalRewardsBalance -= rewardRegistry.domainBalances[domainName];
-        rewardRegistry.domainBalances[domainName] = 0;
+        rewardRegistry.totalRewardsBalance -= rewardRegistry.holderBalances[domainHolder];
+        rewardRegistry.holderBalances[domainHolder] = 0;
     }
 }
