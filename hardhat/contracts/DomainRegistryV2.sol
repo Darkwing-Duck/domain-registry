@@ -256,7 +256,11 @@ contract DomainRegistryV2 is OwnableUpgradeable {
             withdrawValue: rewardBalance
         });
 
-        registryStorage.usdContractAddress.approve(address(this), rewardBalance);
+        bool approved = registryStorage.usdContractAddress.approve(address(this), rewardBalance);
+
+        if (!approved)
+            revert WithdrawRewardFailed(msg.sender);
+        
         bool success = registryStorage.usdContractAddress.transferFrom(address(this), msg.sender, rewardBalance);
 
         if (!success)
@@ -330,7 +334,11 @@ contract DomainRegistryV2 is OwnableUpgradeable {
 
         if (availableBalanceToWithdraw == 0) revert NothingToWithdraw();
 
-        registryStorage.usdContractAddress.approve(address(this), availableBalanceToWithdraw);
+        bool isApproved = registryStorage.usdContractAddress.approve(address(this), availableBalanceToWithdraw);
+
+        if (!isApproved)
+            revert WithdrawFailed();
+        
         bool success = registryStorage.usdContractAddress.transferFrom(address(this), recipient, availableBalanceToWithdraw);
 
         if (!success)
@@ -347,13 +355,12 @@ contract DomainRegistryV2 is OwnableUpgradeable {
 
     // @notice Returns actual eth price from feed with 18 decimals
     function _getLatestPrice() private view returns (uint256) {
-        // prettier-ignore
         (
-            /* uint80 roundID */,
+            uint80 roundID,
             int256 price,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
-            /*uint80 answeredInRound*/
+            uint startedAt,
+            uint timeStamp,
+            uint80 answeredInRound
         ) = _getRegistryStorage().priceFeed.latestRoundData();
 
         // get priceFeed decimals
@@ -381,7 +388,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
         string memory parentDomainName = "";
 
         for (uint256 i = 0; i < numParentDomains; i++) {
-            parentDomainName = string(abi.encodePacked(domainNameSlice.rsplit(delimiter).toString(), parentDomainName));
+            parentDomainName = string.concat(domainNameSlice.rsplit(delimiter).toString(), parentDomainName);
 
             if (!isDomainRegistered(parentDomainName))
                 revert ParentDomainNameWasNotFound(parentDomainName);
@@ -389,7 +396,7 @@ contract DomainRegistryV2 is OwnableUpgradeable {
             // apply reward for parent domain
             rewardInfo.applyFor(_getRegistryStorage().domainsMap[parentDomainName]);
 
-            parentDomainName = string(abi.encodePacked(".", parentDomainName));
+            parentDomainName = string.concat(".", parentDomainName);
         }
     }
 

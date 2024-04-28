@@ -29,11 +29,9 @@ library RewardRegistry {
     /// @notice Applies reward to specified domain name
     function applyFor(Info storage rewardRegistry, address domainHolder)
         internal
-        returns (uint256)
     {
         rewardRegistry.holderBalances[domainHolder] += rewardRegistry.rewardValue;
         rewardRegistry.totalRewardsBalance += rewardRegistry.rewardValue;
-        return rewardRegistry.rewardValue;
     }
 
     /// @notice Resets reward for specified domain name
