@@ -11,10 +11,11 @@
     "hardhat:deploy": "hardhat run scripts/deploy.ts --network localhost",
     "hardhat:upgrade": "hardhat run scripts/upgrade.ts --network localhost",
     "hardhat:deploy:sepolia": "MNEMONIC=$(security find-generic-password -w -s 'mnemonic') INFURA_API_KEY=$(security find-generic-password -w -s 'infura-api-key') hardhat run scripts/deploy.ts --network sepolia",
-    "hardhat:upgrade:sepolia": "MNEMONIC=$(security find-generic-password -w -s 'mnemonic') INFURA_API_KEY=$(security find-generic-password -w -s 'infura-api-key') hardhat run scripts/upgrade.ts --network sepolia"
+    "hardhat:upgrade:sepolia": "MNEMONIC=$(security find-generic-password -w -s 'mnemonic') INFURA_API_KEY=$(security find-generic-password -w -s 'infura-api-key') hardhat run scripts/upgradeSepolia.ts --network sepolia"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.6",
     "@openzeppelin/hardhat-upgrades": "^3.0.5",
     "hardhat": "^2.22.3",
     "prettier": "3.2.5",

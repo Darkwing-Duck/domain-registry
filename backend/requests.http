@@ -1,19 +1,9 @@
-### Send POST request with json body
-POST http://localhost:3000/mint
-Content-Type: application/json
-
-{
-  "to": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "amount": 10
-}
-
-
 ### Send POST request to transfer all the gained ETH by contract to the owner's address
 POST http://localhost:3000/withdrawEth
 Content-Type: application/json
 
 {
-  "to": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  "to": "0x69Cf5a2187311de3D4B6Bb9bE29D2B1aEeEE2535"
 }
 
 ### Send POST request to transfer all the gained USD by contract to the owner's address
@@ -21,7 +11,7 @@ POST http://localhost:3000/withdrawUsd
 Content-Type: application/json
 
 {
-  "to": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  "to": "0x69Cf5a2187311de3D4B6Bb9bE29D2B1aEeEE2535"
 }
 
 

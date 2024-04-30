@@ -1,9 +1,11 @@
 import "@nomicfoundation/hardhat-toolbox";
 import "@openzeppelin/hardhat-upgrades";
+import {vars} from "hardhat/config";
 
 const DEFAULT_MNEMONIC = "test test test test test test test test test test test junk";
 const MNEMONIC = process.env.MNEMONIC || DEFAULT_MNEMONIC;
-const INFURA_API_KEY = process.env.INFURA_API_KEY || "";
+const INFURA_API_KEY = process.env.INFURA_API_KEY || vars.get("INFURA_API_KEY") || "";
+const ETHERSCAN_API_KEY = vars.get("ETHERSCAN_API_KEY");
 
 module.exports = {
     defaultNetwork: "hardhat",
@@ -22,6 +24,11 @@ module.exports = {
             accounts: {
                 mnemonic: MNEMONIC,
             }
+        }
+    },
+    etherscan: {
+        apiKey: {
+            sepolia: ETHERSCAN_API_KEY
         }
     },
     solidity: {

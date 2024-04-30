@@ -5,7 +5,7 @@ import erc20TokenArtifact
   from "../../hardhat/artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json" assert {type: "json"}
 
 const provider = new ethers.BrowserProvider(window.ethereum)
-const DOMAIN_REGISTRY_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+const DOMAIN_REGISTRY_ADDRESS = "0x68bF90951656cDcDe091abDC940bbBaf8b5a98B3";
 
 const contract = new ethers.Contract(
     DOMAIN_REGISTRY_ADDRESS,
@@ -24,7 +24,7 @@ export const initializeUsdTokenContract = async () => {
 }
 
 export const registrationPriceUsd = async () => {
-  return await contract.registrationPriceUsd({gasLimit: 200000})
+  return await contract.registrationPriceUsd()
 }
 
 export const registrationPriceEth = async () => {

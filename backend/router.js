@@ -1,17 +1,9 @@
 import url from 'url';
-import {
-  handleMint,
-  handleWithdrawEth,
-  handleWithdrawUsd,
-  handleRegistrationPrice, 
-  handleReward
-} from "./handlers.js";
+import {handleRegistrationPrice, handleReward, handleWithdrawEth, handleWithdrawUsd} from "./handlers.js";
 
 async function routeRequest(req, res) {
   const parsedUrl = url.parse(req.url, true);
-  if (req.method === 'POST' && parsedUrl.pathname === '/mint') {
-    handleMint(req, res);
-  } else if (req.method === 'POST' && parsedUrl.pathname === '/withdrawEth') {
+  if (req.method === 'POST' && parsedUrl.pathname === '/withdrawEth') {
     await handleWithdrawEth(res, req);
   } else if (req.method === 'POST' && parsedUrl.pathname === '/withdrawUsd') {
     await handleWithdrawUsd(res, req);

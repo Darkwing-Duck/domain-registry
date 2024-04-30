@@ -1,27 +1,6 @@
 import url from "url";
 import * as eth from "./eth.js";
 
-export function handleMint(req, res) {
-  let requestBody = '';
-
-  req.on('data', (chunk) => {
-    requestBody += chunk.toString();
-  });
-
-  req.on('end', async () => {
-    res.setHeader('Content-Type', 'text/plain');
-    try {
-      const { to, amount } = JSON.parse(requestBody);
-      await eth.mint(to, amount);
-      res.statusCode = 200;
-      res.end(`Minted ${amount} tokens to ${to}.\n`);
-    } catch (error) {
-      res.statusCode = 500;
-      res.end(`Internal Server Error:${error.message}\n`);
-    }
-  });
-}
-
 export function handleWithdrawEth(res, req) {
   let requestBody = '';
 

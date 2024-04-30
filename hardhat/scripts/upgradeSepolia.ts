@@ -1,13 +1,11 @@
 import {ethers, upgrades} from "hardhat";
 import assert from "assert";
-import {deployMock} from "./deployMock";
 
 async function upgrade(){
-    const { priceFeed, token } = await deployMock();
     const DomainRegistryProtoV2 = await ethers.getContractFactory("DomainRegistryV2");
-    const address = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-    const priceFeedAddress = await priceFeed.getAddress();
-    const tokenAddress = await token.getAddress();
+    const address = "0x68bF90951656cDcDe091abDC940bbBaf8b5a98B3";
+    const priceFeedAddress = "0x694AA1769357215DE4FAC081bf1f309aDC325306";
+    const tokenAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
     
     const upgradedToContractV2 = await upgrades.upgradeProxy(address, DomainRegistryProtoV2, {call: {
         fn: "reinitialize",

@@ -1,0 +1,378 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x68bF90951656cDcDe091abDC940bbBaf8b5a98B3",
+      "txHash": "0x36e34eecf5952a95200632942814df8eaed22e852f766e69f9631867e98870b3",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "b71b3e1a1285868b4db0487acf1d83992b73160a867257c1be47b06746f0703e": {
+      "address": "0x0c727f8DB6A5Dd45aafEF8efdfE43188D7CD9a54",
+      "txHash": "0x6ce925252595df6b6346d4b71f6dba0b4ff036e40d90ac50b490f219368551cf",
+      "layout": {
+        "solcVersion": "0.8.24",
+        "storage": [],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_address_payable": {
+            "label": "address payable",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_string_memory_ptr,t_address_payable)": {
+            "label": "mapping(string => address payable)",
+            "numberOfBytes": "32"
+          },
+          "t_string_memory_ptr": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(InitializableStorage)140_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)90_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RegistryStorage)426_storage": {
+            "label": "struct DomainRegistry.RegistryStorage",
+            "members": [
+              {
+                "label": "registrationPrice",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "domainsMap",
+                "type": "t_mapping(t_string_memory_ptr,t_address_payable)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_string_storage": {
+            "label": "string"
+          }
+        },
+        "namespaces": {
+          "erc7201:mycompanyname.storage.DomainRegistry": [
+            {
+              "contract": "DomainRegistry",
+              "label": "registrationPrice",
+              "type": "t_uint256",
+              "src": "contracts/DomainRegistry.sol:16",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "DomainRegistry",
+              "label": "domainsMap",
+              "type": "t_mapping(t_string_memory_ptr,t_address_payable)",
+              "src": "contracts/DomainRegistry.sol:18",
+              "offset": 0,
+              "slot": "1"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "da215d32dc5f1d2397602f9620d90e65465a848c8c42102d0ebd88a3664bdaa3": {
+      "address": "0x227E46b9a92Fa537686aAe48B2cF288E9a1230B3",
+      "txHash": "0x769398a4fca74fe8821e526f8c45f1e097ad229b835ecf052133c58c384fd3e8",
+      "layout": {
+        "solcVersion": "0.8.24",
+        "storage": [],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_address_payable": {
+            "label": "address payable",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(AggregatorV3Interface)40": {
+            "label": "contract AggregatorV3Interface",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ERC20)350": {
+            "label": "contract ERC20",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_string_memory_ptr,t_address_payable)": {
+            "label": "mapping(string => address payable)",
+            "numberOfBytes": "32"
+          },
+          "t_string_memory_ptr": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Info)1459_storage": {
+            "label": "struct RewardRegistry.Info",
+            "members": [
+              {
+                "label": "rewardValue",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "totalRewardsBalance",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "holderBalances",
+                "type": "t_mapping(t_address,t_uint256)",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(InitializableStorage)140_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)90_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RegistryStorage)526_storage": {
+            "label": "struct DomainRegistryV2.RegistryStorage",
+            "members": [
+              {
+                "label": "registrationPrice",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "domainsMap",
+                "type": "t_mapping(t_string_memory_ptr,t_address_payable)",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "ethRewardInfo",
+                "type": "t_struct(Info)1459_storage",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "usdRewardInfo",
+                "type": "t_struct(Info)1459_storage",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "priceFeed",
+                "type": "t_contract(AggregatorV3Interface)40",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "usdContractAddress",
+                "type": "t_contract(ERC20)350",
+                "offset": 0,
+                "slot": "9"
+              }
+            ],
+            "numberOfBytes": "320"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_string_storage": {
+            "label": "string"
+          }
+        },
+        "namespaces": {
+          "erc7201:mycompanyname.storage.DomainRegistry": [
+            {
+              "contract": "DomainRegistryV2",
+              "label": "registrationPrice",
+              "type": "t_uint256",
+              "src": "contracts/DomainRegistryV2.sol:20",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "DomainRegistryV2",
+              "label": "domainsMap",
+              "type": "t_mapping(t_string_memory_ptr,t_address_payable)",
+              "src": "contracts/DomainRegistryV2.sol:22",
+              "offset": 0,
+              "slot": "1"
+            },
+            {
+              "contract": "DomainRegistryV2",
+              "label": "ethRewardInfo",
+              "type": "t_struct(Info)1459_storage",
+              "src": "contracts/DomainRegistryV2.sol:24",
+              "offset": 0,
+              "slot": "2"
+            },
+            {
+              "contract": "DomainRegistryV2",
+              "label": "usdRewardInfo",
+              "type": "t_struct(Info)1459_storage",
+              "src": "contracts/DomainRegistryV2.sol:25",
+              "offset": 0,
+              "slot": "5"
+            },
+            {
+              "contract": "DomainRegistryV2",
+              "label": "priceFeed",
+              "type": "t_contract(AggregatorV3Interface)40",
+              "src": "contracts/DomainRegistryV2.sol:27",
+              "offset": 0,
+              "slot": "8"
+            },
+            {
+              "contract": "DomainRegistryV2",
+              "label": "usdContractAddress",
+              "type": "t_contract(ERC20)350",
+              "src": "contracts/DomainRegistryV2.sol:29",
+              "offset": 0,
+              "slot": "9"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

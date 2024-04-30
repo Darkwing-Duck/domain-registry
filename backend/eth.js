@@ -17,7 +17,7 @@ async function withdrawEth(to) {
     const balanceInWei = await provider.getBalance(wallet.address);
     console.log("balanceInWei:", balanceInWei);
     
-    const tx = await contract.withdrawEthTo(to, { gasLimit: 32000 });
+    const tx = await contract.withdrawEthTo(to);
     await tx.wait();
     console.log(`All gained ETH was withdrawed to ${to}. Tx hash: ${tx.hash}`);
   } catch (error) {
@@ -28,7 +28,7 @@ async function withdrawEth(to) {
 
 async function withdrawUsd(to) {
   try {
-    const tx = await contract.withdrawUsdTo(to, { gasLimit: 41000 });
+    const tx = await contract.withdrawUsdTo(to);
     await tx.wait();
     console.log(`All gained USD was withdrawed to ${to}. Tx hash: ${tx.hash}`);
   } catch (error) {
