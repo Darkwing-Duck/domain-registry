@@ -6,13 +6,13 @@ node_modules
 generated
 
 # Hardhat files
-/cache
-/artifacts
+/hardhat/cache
+/hardhat/artifacts
 
 # TypeChain files
-/typechain
-/typechain-types
+/hardhat/typechain
+/hardhat/typechain-types
 
 # solidity-coverage files
-/coverage
-/coverage.json
+/hardhat/coverage
+/hardhat/coverage.json

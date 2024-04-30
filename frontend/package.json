@@ -1,0 +1,25 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/main.js",
+  "scripts": {
+    "build": "webpack",
+    "start": "webpack && webpack-dev-server"
+  },
+  "keywords": [],
+  "author": "Andriian Chestnykh",
+  "license": "ISC",
+  "devDependencies": {
+    "copy-webpack-plugin": "^11.0.0",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  },
+  "dependencies": {
+    "bootstrap": "^4.4.1",
+    "bootstrap-table": "^1.14.2",
+    "ethers": "^6.7.1",
+    "jquery": "^3.7.1"
+  }
+}

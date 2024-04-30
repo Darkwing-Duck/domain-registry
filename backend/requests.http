@@ -1,0 +1,22 @@
+### Send POST request to transfer all the gained ETH by contract to the owner's address
+POST http://localhost:3000/withdrawEth
+Content-Type: application/json
+
+{
+  "to": "0x69Cf5a2187311de3D4B6Bb9bE29D2B1aEeEE2535"
+}
+
+### Send POST request to transfer all the gained USD by contract to the owner's address
+POST http://localhost:3000/withdrawUsd
+Content-Type: application/json
+
+{
+  "to": "0x69Cf5a2187311de3D4B6Bb9bE29D2B1aEeEE2535"
+}
+
+
+### GET request to get actual registration price in USD
+GET http://localhost:3000/registrationPrice
+
+### GET request to get actual domain holder reward in USD for registering sub-domains
+GET http://localhost:3000/reward

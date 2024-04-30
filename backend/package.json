@@ -1,0 +1,21 @@
+{
+  "name": "lesson10",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start:server:local": "node server.js",
+    "start:server:sepolia": "RPC=https://sepolia.infura.io/v3/$(security find-generic-password -w -s 'infura-api-key') MNEMONIC=$(security find-generic-password -w -s 'mnemonic') node server.js",
+    "nodemon:server": "nodemon -e js server.js"
+  },
+  "keywords": [],
+  "author": "Andriian Chestnykh",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "dependencies": {
+    "ethers": "^6.7.1"
+  }
+}
