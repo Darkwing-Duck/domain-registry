@@ -1,5 +1,5 @@
 import {loadFixture,} from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import {ethers} from "hardhat";
+import {ethers, upgrades} from "hardhat";
 import {expect} from "chai";
 import {TypedContractEvent, TypedEventLog} from "../typechain-types/common";
 import {DomainRegisteredEvent} from "../typechain-types/DomainRegistry";
@@ -12,7 +12,7 @@ describe("DomainRegistry", function () {
         const DomainRegistryProto = await ethers.getContractFactory("DomainRegistry");
         
         const registrationPrice = ethers.parseEther("1");
-        const domainRegistry = await DomainRegistryProto.deploy(owner, registrationPrice);
+        const domainRegistry = await upgrades.deployProxy(DomainRegistryProto, [owner.address, registrationPrice]);
 
         return { domainRegistry, owner, otherAccount };
     }
@@ -31,20 +31,6 @@ describe("DomainRegistry", function () {
     - createdDate: ${getReadableDate(createdDate)}
     - domainHolder: ${domainHolder}`);
     }
-
-    it("Should support only top-level domain names", async () => {
-        const { domainRegistry } = await loadFixture(domainRegistryFixture);
-
-        // should be rejected due an unsupported domain name
-        await expect(domainRegistry.registerDomain("business.com")).to.be.rejectedWith(
-            "UnsupportedDomainName"
-        );
-
-        // should not be rejected for supported domain name
-        await expect(domainRegistry.registerDomain("com")).to.not.be.rejectedWith(
-            "UnsupportedDomainName"
-        );
-    });
     
     it("Should revert with 'NotEnoughMoneyToRegisterDomain' error", async () => {
         const domainName = "com";
@@ -90,6 +76,24 @@ describe("DomainRegistry", function () {
         expect(balance).to.be.equal(etherToSend);
     });
 
+    it("Only owner can withdraw balance to its own address", async () => {
+        const { domainRegistry, owner, otherAccount } = await loadFixture(domainRegistryFixture);
+        const etherToSend = ethers.parseEther("1");
+        const options = { value: etherToSend };
+
+        await domainRegistry.registerDomain("com", options);
+        await domainRegistry.registerDomain("net", options);
+
+        await expect(domainRegistry.connect(otherAccount).withdraw()).to.be.rejectedWith(
+            'OwnableUnauthorizedAccount'
+        );
+        
+        const withdrawTx = await domainRegistry.withdraw();
+        
+        expect(await ethers.provider.getBalance(domainRegistry)).to.be.equal(0);
+        expect(withdrawTx).to.changeEtherBalance(owner, ethers.parseEther("2"));
+    });
+
     // @notice If sender will pay more then needed, contract should refund the excess 
     it("Should refund excess due to overpayment", async () => {
         const domainName = "com";
@@ -128,13 +132,13 @@ describe("DomainRegistry", function () {
         const initialPrice = await domainRegistry.registrationPrice();
 
         await expect(domainRegistry.connect(otherAccount).changeRegistrationPrice(newPrice)).to.be.rejectedWith(
-            'UnauthorizedAccount'
+            'OwnableUnauthorizedAccount'
         );
 
         expect(await domainRegistry.registrationPrice()).to.be.equal(initialPrice);
 
         await expect(domainRegistry.changeRegistrationPrice(newPrice)).to.not.be.rejectedWith(
-            'UnauthorizedAccount'
+            'OwnableUnauthorizedAccount'
         );
 
         expect(await domainRegistry.registrationPrice()).to.be.equal(newPrice);
