@@ -2,8 +2,14 @@
   "name": "hardhat-project",
   "scripts": {
     "hardhat:node": "hardhat node",
-    "hardhat:test": "hardhat test",
-    "hardhat:compile": "hardhat compile"
+    "hardhat:test:v1": "hardhat test ./test/DomainRegistry.test.ts",
+    "hardhat:test:v2": "hardhat test ./test/DomainRegistryV2.test.ts",
+    "hardhat:test:upgrade": "hardhat test ./test/DomainRegistryUpgrade.test.ts",
+    "hardhat:compile": "hardhat compile",
+    "hardhat:deploy": "hardhat run scripts/deploy.ts --network localhost",
+    "hardhat:upgrade": "hardhat run scripts/upgrade.ts --network localhost",
+    "hardhat:deploy:sepolia": "MNEMONIC=$(security find-generic-password -w -s 'mnemonic') INFURA_API_KEY=$(security find-generic-password -w -s 'infura-api-key') hardhat run scripts/deploy.ts --network sepolia",
+    "hardhat:upgrade:sepolia": "MNEMONIC=$(security find-generic-password -w -s 'mnemonic') INFURA_API_KEY=$(security find-generic-password -w -s 'infura-api-key') hardhat run scripts/upgrade.ts --network sepolia"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",

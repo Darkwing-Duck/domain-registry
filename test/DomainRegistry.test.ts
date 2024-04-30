@@ -2,11 +2,11 @@ import {loadFixture,} from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import {ethers, upgrades} from "hardhat";
 import {expect} from "chai";
 import {TypedContractEvent, TypedEventLog} from "../typechain-types/common";
-import {DomainRegisteredEvent} from "../typechain-types/DomainRegistry";
+import {DomainRegisteredEvent} from "../typechain-types/contracts/DomainRegistry";
 
-describe("DomainRegistry", function () {
+describe("DomainRegistryV1", function () {
     async function domainRegistryFixture() {
-
+        
         // Contracts are deployed using the first signer/account by default
         const [owner, otherAccount] = await ethers.getSigners();
         const DomainRegistryProto = await ethers.getContractFactory("DomainRegistry");
@@ -84,7 +84,7 @@ describe("DomainRegistry", function () {
         await domainRegistry.registerDomain("com", options);
         await domainRegistry.registerDomain("net", options);
 
-        await expect(domainRegistry.connect(otherAccount).withdraw()).to.be.rejectedWith(
+        await expect((domainRegistry.connect(otherAccount) as any).withdraw()).to.be.rejectedWith(
             'OwnableUnauthorizedAccount'
         );
         
@@ -101,7 +101,7 @@ describe("DomainRegistry", function () {
 
         const etherToSend = ethers.parseEther("3");
         const options = { value: etherToSend };
-        const priceForRegistration = await domainRegistry.registrationPrice();
+        const priceForRegistration: bigint = await domainRegistry.registrationPrice();
 
         // balances before registration
         let contractBalanceBefore = await ethers.provider.getBalance(domainRegistry);
@@ -112,7 +112,9 @@ describe("DomainRegistry", function () {
         // calculate the full transaction cost
         const tx = await domainRegistry.registerDomain(domainName, options);
         const receipt = await tx.wait();
-        const gasUsed = receipt!.cumulativeGasUsed * receipt!.gasPrice;
+        const cumulativeGasUse: bigint = receipt!.cumulativeGasUsed;
+        const gasPrice: bigint = receipt!.gasPrice;
+        const gasUsed = cumulativeGasUse * gasPrice;
         const predictedOwnerBalance = ownerBalanceBefore - priceForRegistration - gasUsed;
 
         // balances after registration
@@ -131,7 +133,7 @@ describe("DomainRegistry", function () {
         const newPrice = ethers.parseEther("3");
         const initialPrice = await domainRegistry.registrationPrice();
 
-        await expect(domainRegistry.connect(otherAccount).changeRegistrationPrice(newPrice)).to.be.rejectedWith(
+        await expect((domainRegistry.connect(otherAccount) as any).changeRegistrationPrice(newPrice)).to.be.rejectedWith(
             'OwnableUnauthorizedAccount'
         );
 
@@ -158,11 +160,11 @@ describe("DomainRegistry", function () {
 
         // register domains by otherAccount
         for (let domainName of domainsToRegisterByOtherAccount) {
-            await domainRegistry.connect(otherAccount).registerDomain(domainName, options);
+            await (domainRegistry.connect(otherAccount) as any).registerDomain(domainName, options);
         }
 
         const filter = domainRegistry.filters.DomainRegistered();
-        const logs = await domainRegistry.queryFilter(filter);
+        const logs: any[] = await domainRegistry.queryFilter(filter);
         let sortedLogs = sortLogsByDate(logs);
         
         console.log(`Number of registered domains: ${sortedLogs.length}`);
@@ -173,7 +175,7 @@ describe("DomainRegistry", function () {
 
         // print detailed info of all registered domains
         console.log(`===== All registered domains ======`);
-        logs.map((log) => {
+        logs.map((log: any) => {
             logDomainInfo(log.args.name, log.args.createdDate, log.args.domainHolder);
         });
         console.log(`===================================`);
@@ -183,7 +185,7 @@ describe("DomainRegistry", function () {
         // print detailed info of all registered sub-domains for domain 'org'
         console.log(`===== All registered domains by a domain holder (%s) ======`, otherAccount.address);
         const orgFilter = domainRegistry.filters.DomainRegistered(null, otherAccount);
-        const orgLogs = await domainRegistry.queryFilter(orgFilter);
+        const orgLogs: any[] = await domainRegistry.queryFilter(orgFilter);
         sortedLogs = sortLogsByDate(orgLogs);
 
         sortedLogs.map((log) => {
